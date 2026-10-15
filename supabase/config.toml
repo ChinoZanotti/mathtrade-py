@@ -1,0 +1,9 @@
+# Configuración mínima para `supabase` CLI. Ajustá project_id si querés.
+project_id = "mathtrade"
+
+[functions.bgg-search]
+verify_jwt = true
+
+# Esta función valida por su cuenta: secreto de cron o JWT de un admin.
+[functions.advance-events]
+verify_jwt = false

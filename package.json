@@ -1,0 +1,10 @@
+{
+  "name": "mathtrade",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/matcher.test.ts",
+    "test:jar": "TM_JAR=${TM_JAR:?Definí TM_JAR=/ruta/a/tm.jar} node --test tests/matcher.test.ts",
+    "web": "npm --prefix web run dev"
+  }
+}
