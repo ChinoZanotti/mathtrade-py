@@ -10,7 +10,7 @@ Etapas (`events.status`): `upcoming` → `listing` → `wanting` → `processing
 4. Al cerrar, `advance-events` corre el algoritmo y guarda `trades`, `event_results` y `event_inputs`.
 
 ## Stack
-- `web/`: React 18 + Vite + TypeScript, react-router, `@supabase/supabase-js`. CSS plano con variables en `web/src/styles.css`.
+- `web/`: React 18 + Vite + TypeScript, react-router, `@supabase/supabase-js`. CSS plano con variables en `web/src/styles.css`. Estilo "Caja de juego" (colores tipo meeple, botones tipo ficha, color por etapa), **solo tema claro** (no agregar modo oscuro), títulos en Outfit y texto en Nunito (Google Fonts en `web/index.html`).
 - `supabase/migrations/`: esquema Postgres + RLS (la seguridad vive acá, no en el frontend).
 - `supabase/functions/`: Edge Functions en Deno (`bgg-search`, `advance-events`) y código compartido en `_shared/`.
 - `tests/`: tests del algoritmo con `node:test`.

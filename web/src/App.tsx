@@ -34,7 +34,10 @@ export default function App() {
       <header className="topbar">
         <div className="container topbar-inner">
           <Link to="/" className="brand">
-            <span aria-hidden>🎲</span> Math Trade
+            <span className="brand-mark" aria-hidden>
+              🎲
+            </span>
+            Math Trade
           </Link>
           <nav className="nav">
             <NavLink to="/" end>

@@ -1,40 +1,38 @@
+/* Estilo "Caja de juego": colores de meeple, formas redondeadas y botones tipo ficha.
+   Solo tema claro: color-scheme evita que el navegador oscurezca inputs y scrollbars. */
 :root {
-  --bg: #f5f0e6;
-  --surface: #fffdf8;
-  --surface-2: #f0e9da;
-  --ink: #1f2a24;
-  --muted: #667066;
-  --line: #e1d8c4;
-  --brand: #1e5b4f;
+  color-scheme: light;
+  --bg: #fff8ec;
+  --surface: #ffffff;
+  --surface-2: #fff0d6;
+  --ink: #22223b;
+  --muted: #6b6880;
+  --line: #eadfc8;
+  /* Borde y sombra sólida de las piezas "de ficha" (botones, tarjetas). */
+  --edge: #22223b;
+  --edge-shadow: #22223b;
+  --brand: #3a5bd9;
   --brand-ink: #ffffff;
-  --accent: #c9742a;
-  --ok: #2f7d4f;
-  --ok-bg: #e2f1e7;
-  --danger: #b3382c;
-  --danger-bg: #f8e3df;
-  --radius: 14px;
-  --shadow: 0 1px 2px rgb(31 42 36 / 0.06), 0 4px 14px rgb(31 42 36 / 0.05);
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #131a17;
-    --surface: #1b2420;
-    --surface-2: #23302a;
-    --ink: #eae6da;
-    --muted: #9aa69d;
-    --line: #2e3b34;
-    --brand: #4fb39d;
-    --brand-ink: #0d1512;
-    --accent: #e39a52;
-    --ok: #6cc28c;
-    --ok-bg: #1d3328;
-    --danger: #ee8a7d;
-    --danger-bg: #3a211e;
-    --shadow: none;
-  }
+  --accent: #ffb703;
+  --accent-ink: #22223b;
+  /* Acento usable como color de texto sobre el fondo. */
+  --accent-text: #b35400;
+  --meeple-red: #e63946;
+  --meeple-green: #2a9d8f;
+  --meeple-pink: #ef5da8;
+  --meeple-orange: #f77f00;
+  --meeple-gray: #a8a5b8;
+  --ok: #1f7a5a;
+  --ok-bg: #ddf5ea;
+  --danger: #c1121f;
+  --danger-bg: #fde2e4;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow: 0 3px 0 var(--edge-shadow);
+  --shadow-soft: 0 3px 0 color-mix(in srgb, var(--edge-shadow) 14%, transparent);
+  --dots: color-mix(in srgb, var(--ink) 7%, transparent);
+  --font: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Outfit', 'Nunito', system-ui, sans-serif;
 }
 
 * {
@@ -45,30 +43,35 @@ html {
 }
 body {
   margin: 0;
-  background: var(--bg);
+  background-color: var(--bg);
+  /* Puntos sutiles, como un tablero. */
+  background-image: radial-gradient(var(--dots) 1.2px, transparent 1.6px);
+  background-size: 22px 22px;
   color: var(--ink);
   font-family: var(--font);
-  line-height: 1.5;
+  line-height: 1.55;
 }
 h1,
 h2,
 h3 {
   font-family: var(--font-display);
+  font-weight: 600;
   line-height: 1.2;
   margin: 1.2em 0 0.4em;
 }
 h1 {
-  font-size: 1.9rem;
+  font-size: 2rem;
   margin-top: 0.6em;
 }
 h2 {
-  font-size: 1.35rem;
+  font-size: 1.4rem;
 }
 h3 {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
 }
 a {
   color: var(--brand);
+  font-weight: 600;
 }
 code {
   background: var(--surface-2);
@@ -108,7 +111,7 @@ code {
 /* Barra superior */
 .topbar {
   background: var(--surface);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 2px solid var(--line);
   position: sticky;
   top: 0;
   z-index: 5;
@@ -122,11 +125,26 @@ code {
   flex-wrap: wrap;
 }
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   color: var(--ink);
   text-decoration: none;
+}
+.brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--edge);
+  box-shadow: 0 2px 0 var(--edge-shadow);
+  font-size: 1.15rem;
+  transform: rotate(-8deg);
 }
 .nav {
   display: flex;
@@ -134,10 +152,14 @@ code {
   flex: 1;
 }
 .nav a {
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 999px;
   text-decoration: none;
   color: var(--muted);
+  font-weight: 700;
+}
+.nav a:hover {
+  color: var(--ink);
 }
 .nav a.active {
   background: var(--surface-2);
@@ -152,14 +174,14 @@ code {
 /* Tarjetas y layout */
 .card {
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 2px solid var(--line);
   border-radius: var(--radius);
-  padding: 16px;
-  box-shadow: var(--shadow);
+  padding: 18px;
+  box-shadow: var(--shadow-soft);
 }
 .callout {
   margin: 16px 0;
-  border-left: 4px solid var(--brand);
+  border-left: 6px solid var(--brand);
 }
 .muted-card {
   background: transparent;
@@ -171,7 +193,7 @@ code {
 }
 .grid {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
 .grid.two {
@@ -196,11 +218,13 @@ code {
   display: block;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.12s ease, border-color 0.12s ease;
+  font-weight: inherit;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
 }
 .event-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--brand);
+  transform: translateY(-3px) rotate(-0.4deg);
+  border-color: var(--edge);
+  box-shadow: 0 5px 0 var(--edge-shadow);
 }
 .event-card h2 {
   margin-top: 0.6em;
@@ -208,31 +232,52 @@ code {
 
 /* Pills y chips */
 .pill {
+  --stage: var(--meeple-gray);
   display: inline-block;
   font-size: 0.75rem;
-  padding: 2px 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 3px 11px;
   border-radius: 999px;
   background: var(--surface-2);
   color: var(--ink);
-  border: 1px solid var(--line);
+  border: 2px solid var(--line);
 }
-.pill.ok,
-.pill.status-finished {
+.pill.ok {
   background: var(--ok-bg);
   color: var(--ok);
   border-color: transparent;
 }
 .pill.mine {
   background: var(--accent);
-  color: #fff;
-  border-color: transparent;
-  font-weight: 600;
+  color: var(--accent-ink);
+  border-color: var(--edge);
 }
-.pill.status-listing,
-.pill.status-wanting {
-  background: var(--brand);
-  color: var(--brand-ink);
-  border-color: transparent;
+/* Cada etapa tiene su color de meeple. */
+.stage-upcoming,
+.status-upcoming {
+  --stage: var(--meeple-gray);
+}
+.stage-listing,
+.status-listing {
+  --stage: var(--accent);
+}
+.stage-wanting,
+.status-wanting {
+  --stage: var(--meeple-pink);
+}
+.stage-processing,
+.status-processing {
+  --stage: var(--brand);
+}
+.stage-finished,
+.status-finished {
+  --stage: var(--meeple-green);
+}
+.pill[class*='status-'] {
+  background: color-mix(in srgb, var(--stage) 24%, var(--surface));
+  border-color: var(--stage);
+  color: var(--ink);
 }
 .chips {
   display: flex;
@@ -248,18 +293,22 @@ code {
 }
 .chip {
   flex: none;
-  border: 1px solid var(--line);
+  border: 2px solid var(--line);
   background: var(--surface);
   color: var(--ink);
-  padding: 8px 14px;
+  padding: 7px 14px;
   border-radius: 999px;
   font: inherit;
+  font-weight: 700;
   cursor: pointer;
+}
+.chip:hover {
+  border-color: var(--edge);
 }
 .chip.on {
   background: var(--brand);
   color: var(--brand-ink);
-  border-color: var(--brand);
+  border-color: var(--edge);
 }
 .chip .count {
   margin-left: 6px;
@@ -277,45 +326,50 @@ code {
   flex-wrap: wrap;
 }
 .stepper li {
+  --stage: var(--meeple-gray);
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 999px;
-  border: 1px solid var(--line);
+  border: 2px solid var(--line);
   background: var(--surface);
   color: var(--muted);
   font-size: 0.85rem;
+  font-weight: 700;
 }
 .stepper .dot {
-  width: 9px;
-  height: 9px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: var(--line);
 }
 .stepper li.done {
-  color: var(--ok);
+  color: var(--ink);
 }
 .stepper li.done .dot {
-  background: var(--ok);
+  background: var(--stage);
 }
 .stepper li.now {
   color: var(--ink);
-  border-color: var(--brand);
-  font-weight: 600;
+  background: color-mix(in srgb, var(--stage) 24%, var(--surface));
+  border-color: var(--edge);
+  box-shadow: 0 2px 0 var(--edge-shadow);
 }
 .stepper li.now .dot {
-  background: var(--brand);
+  background: var(--stage);
+  box-shadow: 0 0 0 2px var(--edge);
 }
 
 /* Formularios */
 .field {
   display: grid;
   gap: 4px;
-  margin: 10px 0;
+  margin: 12px 0;
 }
 .field > span {
   font-size: 0.85rem;
+  font-weight: 700;
   color: var(--muted);
 }
 input,
@@ -324,21 +378,31 @@ textarea {
   font: inherit;
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
   width: 100%;
 }
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: color-mix(in srgb, var(--edge) 40%, var(--line));
+}
 input:focus-visible,
 select:focus-visible,
-textarea:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 30%, transparent);
+}
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 3px solid var(--brand);
   outline-offset: 2px;
 }
 input[type='checkbox'] {
   width: auto;
+  accent-color: var(--brand);
 }
 .check {
   display: inline-flex;
@@ -348,37 +412,60 @@ input[type='checkbox'] {
   white-space: nowrap;
 }
 
-/* Botones */
+/* Botones tipo ficha: sombra sólida que se hunde al apretar. */
 .btn {
   font: inherit;
-  font-weight: 600;
-  border: 1px solid var(--line);
+  font-weight: 800;
+  border: 2px solid var(--edge);
   background: var(--surface);
   color: var(--ink);
-  padding: 10px 18px;
-  border-radius: 999px;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
+  box-shadow: var(--shadow);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.12s ease;
+}
+.btn:hover {
+  background: var(--surface-2);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--edge-shadow);
 }
 .btn.primary {
   background: var(--brand);
   color: var(--brand-ink);
-  border-color: var(--brand);
+}
+.btn.primary:hover {
+  background: color-mix(in srgb, var(--brand) 88%, var(--edge-shadow));
 }
 .btn.ghost {
   background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.btn.ghost:hover {
+  background: var(--surface-2);
+}
+.btn.ghost:active:not(:disabled) {
+  box-shadow: none;
 }
 .btn.small {
-  padding: 5px 12px;
+  padding: 4px 12px;
   font-size: 0.85rem;
+  box-shadow: 0 2px 0 var(--edge-shadow);
+}
+.btn.ghost.small {
+  box-shadow: none;
 }
 .btn.danger {
   color: var(--danger);
 }
 .btn.block {
   width: 100%;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 .btn:disabled {
   opacity: 0.5;
@@ -387,9 +474,10 @@ input[type='checkbox'] {
 
 .alert {
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   margin: 12px 0;
+  font-weight: 600;
 }
 .alert.error {
   background: var(--danger-bg);
@@ -412,19 +500,23 @@ input[type='checkbox'] {
   max-width: 100%;
 }
 .tabs button {
-  border: 0;
+  border: 2px solid transparent;
   background: transparent;
   color: var(--muted);
   font: inherit;
-  padding: 8px 16px;
+  font-weight: 700;
+  padding: 6px 16px;
   border-radius: 999px;
   cursor: pointer;
+}
+.tabs button:hover {
+  color: var(--ink);
 }
 .tabs button.on {
   background: var(--surface);
   color: var(--ink);
-  font-weight: 600;
-  box-shadow: var(--shadow);
+  border-color: var(--edge);
+  box-shadow: 0 2px 0 var(--edge-shadow);
 }
 
 /* Juegos */
@@ -434,29 +526,34 @@ input[type='checkbox'] {
   align-items: flex-start;
   padding: 12px;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 2px solid var(--line);
   border-radius: var(--radius);
   text-align: left;
   width: 100%;
   font: inherit;
   color: inherit;
+  transition: border-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
 }
 .item.clickable {
   cursor: pointer;
 }
 .item.clickable:hover {
-  border-color: var(--brand);
+  border-color: var(--edge);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 0 var(--edge-shadow);
 }
 .item.selected {
   border-color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 9%, var(--surface));
+  background: color-mix(in srgb, var(--brand) 10%, var(--surface));
 }
 .item-body {
   flex: 1;
   min-width: 0;
 }
 .item-title {
+  font-family: var(--font-display);
   font-weight: 600;
+  font-size: 1.05rem;
 }
 .item-title a {
   color: inherit;
@@ -474,8 +571,9 @@ input[type='checkbox'] {
   width: 64px;
   height: 64px;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
+  border: 2px solid var(--line);
   flex: none;
 }
 .thumb.small {
@@ -489,17 +587,17 @@ input[type='checkbox'] {
 }
 .tick {
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 800;
   padding: 4px 12px;
   border-radius: 999px;
-  border: 1px solid var(--line);
+  border: 2px solid var(--line);
   color: var(--muted);
   white-space: nowrap;
 }
 .tick.on {
   background: var(--brand);
   color: var(--brand-ink);
-  border-color: var(--brand);
+  border-color: var(--edge);
 }
 .toolbar {
   display: flex;
@@ -530,13 +628,14 @@ input[type='checkbox'] {
   font: inherit;
   color: inherit;
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: 10px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
   padding: 6px;
   cursor: pointer;
 }
 .bgg-results button:hover {
   background: var(--surface-2);
+  border-color: var(--line);
 }
 
 /* Resultados */
@@ -548,15 +647,16 @@ input[type='checkbox'] {
 }
 .trade .arrow {
   font-size: 1.6rem;
-  color: var(--accent);
+  font-weight: 800;
+  color: var(--accent-text);
 }
 .cycle {
   margin: 6px 0 0;
   padding-left: 18px;
 }
 .cycle li.me {
-  font-weight: 600;
-  color: var(--accent);
+  font-weight: 800;
+  color: var(--accent-text);
 }
 
 /* Login */
@@ -569,12 +669,23 @@ input[type='checkbox'] {
 .login-card {
   width: 100%;
   max-width: 400px;
+  border-color: var(--edge);
+  box-shadow: 0 5px 0 var(--edge-shadow);
 }
 .login-card h1 {
-  margin-top: 0;
+  margin-top: 0.4em;
 }
 .login-logo {
-  font-size: 2.4rem;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: var(--accent);
+  border: 2px solid var(--edge);
+  box-shadow: 0 3px 0 var(--edge-shadow);
+  font-size: 2.1rem;
+  transform: rotate(-8deg);
 }
 
 @media (max-width: 640px) {

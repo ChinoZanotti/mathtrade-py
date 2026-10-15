@@ -71,7 +71,7 @@ export default function EventPage() {
           const idx = STAGES.findIndex((x) => x.status === s.status);
           const state = idx < stageIdx ? 'done' : idx === stageIdx ? 'now' : 'todo';
           return (
-            <li key={s.status} className={state}>
+            <li key={s.status} className={`${state} stage-${s.status}`}>
               <span className="dot" />
               <span>{s.label}</span>
             </li>
