@@ -16,6 +16,9 @@ export async function sendEmails(mails: Mail[]): Promise<{ sent: number; failed:
     console.log(`[email] RESEND_API_KEY no configurada; se omiten ${mails.length} emails`);
     return { sent: 0, failed: 0 };
   }
+  // Las cuentas de prueba (`pruebaNN@mathtrade.test`) no existen: mandarles rebotaría y
+  // perjudicaría la reputación del dominio en Resend.
+  mails = mails.filter((m) => !/\.test$/i.test(m.to));
   let sent = 0;
   let failed = 0;
   for (let i = 0; i < mails.length; i += 100) {
@@ -35,17 +38,18 @@ export async function sendEmails(mails: Mail[]): Promise<{ sent: number; failed:
 }
 
 export function layout(title: string, bodyHtml: string, ctaUrl: string, ctaLabel: string): string {
-  return `<!doctype html><html><body style="margin:0;background:#f5f0e6;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2a24">
+  // Colores del estilo "Caja de juego" (web/src/styles.css).
+  return `<!doctype html><html><body style="margin:0;background:#fff8ec;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#22223b">
 <div style="max-width:520px;margin:0 auto;padding:24px">
-  <div style="background:#fffdf8;border:1px solid #e1d8c4;border-radius:14px;padding:24px">
+  <div style="background:#ffffff;border:2px solid #22223b;border-radius:18px;padding:24px">
     <img src="${APP_URL}/brand/logo-horizontal-email.png" width="220" height="60" alt="Math Trade PY" style="display:block;width:220px;height:auto;border:0">
     <!-- PNG y no SVG: Gmail y Outlook no muestran SVG. -->
 
     <h1 style="font-size:22px;margin:8px 0 12px">${escapeHtml(title)}</h1>
     ${bodyHtml}
-    <p style="margin:24px 0 0"><a href="${ctaUrl}" style="background:#1e5b4f;color:#fff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block">${escapeHtml(ctaLabel)}</a></p>
+    <p style="margin:24px 0 0"><a href="${ctaUrl}" style="background:#3a5bd9;color:#fff;text-decoration:none;padding:12px 22px;border-radius:12px;font-weight:700;display:inline-block">${escapeHtml(ctaLabel)}</a></p>
   </div>
-  <p style="font-size:12px;color:#667066;text-align:center">Recibís este email porque te inscribiste en un evento de Math Trade.</p>
+  <p style="font-size:12px;color:#6b6880;text-align:center">Recibís este email porque te inscribiste en un evento de Math Trade.</p>
 </div></body></html>`;
 }
 
