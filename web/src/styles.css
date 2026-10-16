@@ -732,6 +732,69 @@ input[type='checkbox'] {
   color: var(--accent-text);
 }
 
+/* Entregas (admin) */
+.delivery-progress {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.progress {
+  height: 12px;
+  margin-top: 10px;
+  border-radius: 999px;
+  border: 2px solid var(--edge);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--meeple-green);
+  transition: width 0.2s ease;
+}
+.delivery-giver {
+  margin: 0;
+}
+.deliveries {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.deliveries label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.deliveries label:hover {
+  border-color: var(--edge);
+}
+.deliveries input[type='checkbox'] {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  accent-color: var(--meeple-green);
+}
+.deliveries li.done label {
+  background: var(--ok-bg);
+}
+.deliveries li.done .delivery-title {
+  text-decoration: line-through;
+  text-decoration-color: var(--ok);
+}
+.delivery-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.delivery-title {
+  font-weight: 800;
+}
+
 /* Login */
 .login-wrap {
   min-height: 100vh;

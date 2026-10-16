@@ -6,6 +6,7 @@ import ResetPassword from './pages/ResetPassword';
 import Events from './pages/Events';
 import EventPage from './pages/EventPage';
 import Admin from './pages/Admin';
+import AdminTrades from './pages/AdminTrades';
 import PoweredByBgg from './components/PoweredByBgg';
 
 export default function App() {
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/" element={<Events />} />
           <Route path="/events/:id" element={<EventPage />} />
           <Route path="/admin" element={profile?.is_admin ? <Admin /> : <Navigate to="/" replace />} />
+          <Route path="/admin/events/:id/intercambios" element={profile?.is_admin ? <AdminTrades /> : <Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

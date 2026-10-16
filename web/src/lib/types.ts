@@ -42,6 +42,8 @@ export interface Trade {
   receives_item_id: string;
   cycle_no: number;
   cycle_position: number;
+  delivered_at: string | null;
+  delivered_by: string | null;
 }
 
 export interface BggResult {

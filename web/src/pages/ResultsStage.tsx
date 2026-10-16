@@ -68,6 +68,7 @@ export default function ResultsStage({ event, userId }: { event: TradeEvent; use
           const t = tradeByItem.get(mi.id)!;
           const getting = byId.get(t.receives_item_id);
           const sendToItem = byId.get(receiverOf.get(mi.id) ?? '');
+          const sent = tradeByItem.get(receiverOf.get(mi.id) ?? '')?.delivered_at;
           return (
             <div key={mi.id} className="card trade">
               <div className="trade-col">
@@ -76,6 +77,7 @@ export default function ResultsStage({ event, userId }: { event: TradeEvent; use
                 {sendToItem && (
                   <p className="small">
                     Se lo enviás a <strong>{sendToItem.profiles?.display_name}</strong>
+                    {sent && <> <span className="pill ok">Entregado ✓</span></>}
                   </p>
                 )}
               </div>
@@ -88,6 +90,7 @@ export default function ResultsStage({ event, userId }: { event: TradeEvent; use
                 {getting && (
                   <p className="small">
                     Te lo envía <strong>{getting.profiles?.display_name}</strong>
+                    {t.delivered_at && <> <span className="pill ok">Recibido ✓</span></>}
                   </p>
                 )}
               </div>

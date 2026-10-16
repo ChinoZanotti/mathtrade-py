@@ -10,7 +10,7 @@ import ResultsStage from './ResultsStage';
 
 export default function EventPage() {
   const { id } = useParams();
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
   const userId = session!.user.id;
   const [event, setEvent] = useState<TradeEvent | null>(null);
   const [joined, setJoined] = useState(false);
@@ -87,6 +87,14 @@ export default function EventPage() {
           </>
         )}
       </p>
+
+      {profile?.is_admin && event.status === 'finished' && (
+        <p>
+          <Link className="btn small" to={`/admin/events/${event.id}/intercambios`}>
+            Ver todos los intercambios y entregas
+          </Link>
+        </p>
+      )}
 
       {!joined && canJoin && (
         <div className="card callout">

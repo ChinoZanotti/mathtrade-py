@@ -157,6 +157,11 @@ export default function Admin() {
                 </button>
               )}
               {ev.status === 'finished' && (
+                <Link className="btn small" to={`/admin/events/${ev.id}/intercambios`}>
+                  Ver intercambios y entregas
+                </Link>
+              )}
+              {ev.status === 'finished' && (
                 <button className="btn ghost small" onClick={() => void downloadInput(ev)}>
                   Descargar archivo para TradeMaximizer
                 </button>

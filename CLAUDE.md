@@ -8,6 +8,7 @@ Etapas (`events.status`): `upcoming` → `listing` → `wanting` → `processing
 2. `listing` (~1 mes): cada uno carga sus juegos (`event_items`), buscándolos en BGG. Estado e idioma obligatorios.
 3. `wanting` (~1 mes): cada uno ve el catálogo y, por cada juego propio, marca los juegos por los que lo cambiaría (`item_wants`).
 4. Al cerrar, `advance-events` corre el algoritmo y guarda `trades`, `event_results` y `event_inputs`.
+5. En el evento presencial, los admins marcan cada juego entregado en `/admin/events/:id/intercambios` (`trades.delivered_at`); los participantes lo ven en solo lectura.
 
 Las etapas **nunca avanzan solas por fecha** (decisión de Chino): siempre las inicia un admin desde *Administrar*, y ahí `advance-events` manda los emails a los inscriptos. Las fechas del evento son solo las previstas. No agregar cron ni avance automático.
 
