@@ -1,0 +1,14 @@
+{
+  "name": "Math Trade PY",
+  "short_name": "Math Trade",
+  "lang": "es",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fff8ec",
+  "theme_color": "#fff8ec",
+  "icons": [
+    { "src": "/brand/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/brand/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/brand/appicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

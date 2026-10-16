@@ -1,4 +1,8 @@
+<img src="web/public/brand/logo-horizontal.svg" alt="Math Trade PY" width="360">
+
 # Math Trade
+
+Los logos, isotipo y favicons están en [`web/public/brand/`](web/public/brand/).
 
 Web app para organizar *Math Trades* de juegos de mesa: inscripción, carga de juegos (con datos de BoardGameGeek),
 elección de cambios y cálculo automático de los intercambios (ciclos) que maximizan la cantidad de trades.

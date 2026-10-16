@@ -5,7 +5,7 @@
 //  - Admin desde la web: JWT de un usuario admin + { event_id }. Fuerza el avance de ese evento.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/cors.ts';
-import { escapeHtml, layout, sendEmails, type Mail } from '../_shared/email.ts';
+import { APP_URL, escapeHtml, layout, sendEmails, type Mail } from '../_shared/email.ts';
 import { findTrades, type MatchItem } from '../_shared/matcher.ts';
 
 type Status = 'upcoming' | 'listing' | 'wanting' | 'processing' | 'finished';
@@ -18,8 +18,6 @@ interface EventRow {
   listing_ends_at: string;
   wanting_ends_at: string;
 }
-
-const APP_URL = (Deno.env.get('APP_URL') ?? 'http://localhost:5173').replace(/\/$/, '');
 
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
   auth: { persistSession: false },

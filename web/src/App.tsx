@@ -34,10 +34,7 @@ export default function App() {
       <header className="topbar">
         <div className="container topbar-inner">
           <Link to="/" className="brand">
-            <span className="brand-mark" aria-hidden>
-              🎲
-            </span>
-            Math Trade
+            <img src="/brand/logo-horizontal.svg" alt="Math Trade PY" className="brand-logo" width={146} height={40} />
           </Link>
           <nav className="nav">
             <NavLink to="/" end>

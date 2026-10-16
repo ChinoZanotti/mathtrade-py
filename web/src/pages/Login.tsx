@@ -38,10 +38,9 @@ export default function Login() {
   return (
     <main className="login-wrap">
       <form className="card login-card" onSubmit={submit}>
-        <div className="login-logo" aria-hidden>
-          🎲
-        </div>
-        <h1>Math Trade</h1>
+        <h1 className="login-title">
+          <img src="/brand/logo-stacked.svg" alt="Math Trade PY" width={260} height={156} />
+        </h1>
         <p className="muted">Intercambiá juegos de mesa con la comunidad, en ciclos que benefician a todos.</p>
 
         <div className="tabs" role="tablist">

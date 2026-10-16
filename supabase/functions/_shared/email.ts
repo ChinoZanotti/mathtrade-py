@@ -1,5 +1,8 @@
 // Envío de emails con Resend (https://resend.com). Si no hay RESEND_API_KEY, solo registra en consola.
 
+// URL pública de la web (links de los emails y el logo, que se sirve desde web/public/brand).
+export const APP_URL = (Deno.env.get('APP_URL') ?? 'http://localhost:5173').replace(/\/$/, '');
+
 export interface Mail {
   to: string;
   subject: string;
@@ -35,7 +38,9 @@ export function layout(title: string, bodyHtml: string, ctaUrl: string, ctaLabel
   return `<!doctype html><html><body style="margin:0;background:#f5f0e6;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2a24">
 <div style="max-width:520px;margin:0 auto;padding:24px">
   <div style="background:#fffdf8;border:1px solid #e1d8c4;border-radius:14px;padding:24px">
-    <div style="font-size:28px">🎲</div>
+    <img src="${APP_URL}/brand/logo-horizontal-email.png" width="220" height="60" alt="Math Trade PY" style="display:block;width:220px;height:auto;border:0">
+    <!-- PNG y no SVG: Gmail y Outlook no muestran SVG. -->
+
     <h1 style="font-size:22px;margin:8px 0 12px">${escapeHtml(title)}</h1>
     ${bodyHtml}
     <p style="margin:24px 0 0"><a href="${ctaUrl}" style="background:#1e5b4f;color:#fff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block">${escapeHtml(ctaLabel)}</a></p>
