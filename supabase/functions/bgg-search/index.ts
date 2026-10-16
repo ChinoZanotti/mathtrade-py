@@ -4,6 +4,7 @@
 // y se reutiliza durante CACHE_DAYS antes de volver a consultar a BGG.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/cors.ts';
+import { searchDemoGames } from '../_shared/demo-games.ts';
 
 const BGG = 'https://boardgamegeek.com/xmlapi2';
 const CACHE_DAYS = 7;
@@ -101,6 +102,9 @@ Deno.serve(async (req) => {
     const { query } = await req.json();
     const q = String(query ?? '').trim().replace(/\s+/g, ' ');
     if (q.length < 3 || q.length > 100) return json({ results: [] });
+
+    // Modo de prueba: sin token, BGG rechaza las consultas. Se usa una lista fija y no se toca la cache.
+    if (!Deno.env.get('BGG_TOKEN')) return json({ results: searchDemoGames(q), demo: true });
 
     // "Catan", "catan " y "CATAN" comparten la misma entrada de cache.
     const key = q.toLowerCase();

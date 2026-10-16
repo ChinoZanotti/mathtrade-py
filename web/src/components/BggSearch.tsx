@@ -13,6 +13,7 @@ export default function BggSearch({ onPick }: Props) {
   const [results, setResults] = useState<BggResult[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [demo, setDemo] = useState(false);
   const seq = useRef(0);
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export default function BggSearch({ onPick }: Props) {
         return;
       }
       setResults(data.results as BggResult[]);
+      setDemo(Boolean(data.demo));
     }, 600); // espera a que termine de escribir: menos consultas a BGG
     return () => clearTimeout(t);
   }, [query]);
@@ -44,6 +46,7 @@ export default function BggSearch({ onPick }: Props) {
         <span>Buscá el juego en BoardGameGeek</span>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ej: Catan, Azul, Wingspan…" />
       </label>
+      {demo && <p className="alert">Modo de prueba: la búsqueda usa una lista fija de juegos hasta que se configure el token de BGG.</p>}
       {busy && <p className="small muted">Buscando…</p>}
       {error && <p className="alert error">{error}</p>}
       {!busy && !error && query.trim().length >= 3 && results.length === 0 && <p className="small muted">Sin resultados.</p>}

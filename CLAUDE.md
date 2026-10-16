@@ -20,6 +20,8 @@ Etapas (`events.status`): `upcoming` → `listing` → `wanting` → `processing
 - `TM_JAR=/ruta/tm.jar npm run test:jar`: además compara contra TradeMaximizer (requiere Java).
 - `npm --prefix web install` y `npm --prefix web run dev`: frontend en desarrollo.
 - `npm --prefix web run build`: typecheck (`tsc --noEmit`) + build. Debe pasar siempre.
+- `npm run seed -- usuarios|juegos|deseos|borrar`: datos de prueba (usuarios `pruebaNN@mathtrade.test`, clave `prueba1234`). Usa la service role key de `scripts/.env` (ver `scripts/.env.example`). Solo desarrollo.
+- Sin `BGG_TOKEN`, `bgg-search` responde con la lista fija de `_shared/demo-games.ts` (`demo: true`) y no toca la cache.
 - Edge Functions: `deno check supabase/functions/*/index.ts` para tipos; deploy con `supabase functions deploy <nombre>`.
 
 ## Reglas importantes

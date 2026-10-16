@@ -72,6 +72,24 @@ export default function Admin() {
     await load();
   }
 
+  async function remove(ev: TradeEvent) {
+    // Pedir el título escrito: borra en cascada inscripciones, juegos, deseos y resultados.
+    const typed = prompt(
+      `Vas a eliminar "${ev.title}" junto con sus inscripciones, juegos, deseos y resultados. No se puede deshacer.\n\nEscribí el título del evento para confirmar:`,
+    );
+    if (typed === null) return;
+    if (typed.trim() !== ev.title) return setError('El título no coincide: el evento no se eliminó.');
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    const { data, error } = await supabase.from('events').delete().eq('id', ev.id).select('id');
+    setBusy(false);
+    if (error) return setError(error.message);
+    if (!data?.length) return setError('No se pudo eliminar el evento (¿tenés permisos de administrador?).');
+    setNotice(`Evento "${ev.title}" eliminado.`);
+    await load();
+  }
+
   async function downloadInput(ev: TradeEvent) {
     const { data, error } = await supabase.from('event_inputs').select('tm_input').eq('event_id', ev.id).maybeSingle();
     if (error || !data) return setError(error?.message ?? 'No hay archivo para este evento.');
@@ -141,6 +159,11 @@ export default function Admin() {
               {ev.status === 'finished' && (
                 <button className="btn ghost small" onClick={() => void downloadInput(ev)}>
                   Descargar archivo para TradeMaximizer
+                </button>
+              )}
+              {ev.status !== 'processing' && (
+                <button className="btn ghost small danger" disabled={busy} onClick={() => void remove(ev)}>
+                  Eliminar evento
                 </button>
               )}
             </div>
