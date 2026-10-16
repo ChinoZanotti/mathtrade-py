@@ -5,7 +5,7 @@ import { formatDate, statusLabel } from '../lib/format';
 import type { TradeEvent } from '../lib/types';
 
 const NEXT_LABEL: Record<string, string> = {
-  upcoming: 'Iniciar etapa 1 ahora',
+  upcoming: 'Iniciar etapa 1',
   listing: 'Cerrar etapa 1 e iniciar etapa 2',
   wanting: 'Cerrar etapa 2 y calcular resultados',
 };
@@ -119,7 +119,7 @@ export default function Admin() {
         </label>
         <div className="grid three">
           <label className="field">
-            <span>Inicio (etapa 1)</span>
+            <span>Inicio previsto (etapa 1)</span>
             <input type="date" value={start} onChange={(e) => setStart(e.target.value)} required />
           </label>
           <label className="field">
@@ -171,7 +171,7 @@ export default function Admin() {
         ))}
       </div>
       <p className="small muted">
-        Las etapas avanzan solas al llegar a cada fecha (una tarea programada revisa cada 15 minutos). Los botones sirven para adelantar una etapa.
+        Las etapas no avanzan solas: las fechas son las previstas y cada etapa empieza solo cuando un administrador toca el botón. En ese momento se avisa por email a los inscriptos.
       </p>
     </>
   );

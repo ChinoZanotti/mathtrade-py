@@ -9,6 +9,8 @@ Etapas (`events.status`): `upcoming` → `listing` → `wanting` → `processing
 3. `wanting` (~1 mes): cada uno ve el catálogo y, por cada juego propio, marca los juegos por los que lo cambiaría (`item_wants`).
 4. Al cerrar, `advance-events` corre el algoritmo y guarda `trades`, `event_results` y `event_inputs`.
 
+Las etapas **nunca avanzan solas por fecha** (decisión de Chino): siempre las inicia un admin desde *Administrar*, y ahí `advance-events` manda los emails a los inscriptos. Las fechas del evento son solo las previstas. No agregar cron ni avance automático.
+
 ## Stack
 - `web/`: React 18 + Vite + TypeScript, react-router, `@supabase/supabase-js`. CSS plano con variables en `web/src/styles.css`. Estilo "Caja de juego" (colores tipo meeple, botones tipo ficha, color por etapa), **solo tema claro** (no agregar modo oscuro), títulos en Outfit y texto en Nunito (Google Fonts en `web/index.html`).
 - `supabase/migrations/`: esquema Postgres + RLS (la seguridad vive acá, no en el frontend).
@@ -29,7 +31,7 @@ Etapas (`events.status`): `upcoming` → `listing` → `wanting` → `processing
 - Semántica del matcher: un juego propio se cambia por **uno** de los que el dueño marcó; nunca se intercambia entre juegos del mismo dueño; `rank` opcional (1 = más deseado), sin rank todos cuestan igual.
 - Las listas de deseos (`item_wants`) son **privadas**: solo las ve el dueño del juego. No exponerlas en consultas, resultados ni logs.
 - Toda tabla nueva lleva RLS activada y políticas explícitas. Las escrituras de resultados solo las hace `service_role` desde la Edge Function.
-- No subir secretos: `web/.env` está en `.gitignore`. Los secretos de las funciones (`BGG_TOKEN`, `RESEND_API_KEY`, `CRON_SECRET`, `APP_URL`, `EMAIL_FROM`) se configuran con `supabase secrets set`.
+- No subir secretos: `web/.env` está en `.gitignore`. Los secretos de las funciones (`BGG_TOKEN`, `RESEND_API_KEY`, `APP_URL`, `EMAIL_FROM`) se configuran con `supabase secrets set`.
 - La API de BGG exige token y se consulta solo desde `bgg-search`, nunca desde el navegador.
 - Cambios de esquema: nueva migración numerada (`0002_...sql`), no editar `0001_init.sql` una vez desplegada.
 

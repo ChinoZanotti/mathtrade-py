@@ -35,10 +35,10 @@ export function formatDateTime(iso: string): string {
   }).format(new Date(iso));
 }
 
-/** Próxima fecha límite según la etapa actual. */
+/** Próxima fecha prevista según la etapa actual (las etapas las avanza un admin, no la fecha). */
 export function stageDeadline(e: { status: EventStatus; listing_starts_at: string; listing_ends_at: string; wanting_ends_at: string }) {
-  if (e.status === 'upcoming') return { label: 'Comienza', date: e.listing_starts_at };
-  if (e.status === 'listing') return { label: 'Cierra la carga de juegos', date: e.listing_ends_at };
-  if (e.status === 'wanting') return { label: 'Cierra la elección de cambios', date: e.wanting_ends_at };
+  if (e.status === 'upcoming') return { label: 'Comienzo previsto', date: e.listing_starts_at };
+  if (e.status === 'listing') return { label: 'Cierre previsto de la carga de juegos', date: e.listing_ends_at };
+  if (e.status === 'wanting') return { label: 'Cierre previsto de la elección de cambios', date: e.wanting_ends_at };
   return null;
 }

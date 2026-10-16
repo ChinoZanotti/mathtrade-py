@@ -4,6 +4,6 @@ project_id = "mathtrade"
 [functions.bgg-search]
 verify_jwt = true
 
-# Esta función valida por su cuenta: secreto de cron o JWT de un admin.
+# Esta función valida por su cuenta el JWT y que el usuario sea admin.
 [functions.advance-events]
 verify_jwt = false

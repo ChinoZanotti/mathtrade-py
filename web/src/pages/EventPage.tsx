@@ -105,7 +105,7 @@ export default function EventPage() {
             <div className="card callout">
               <h2>Estás inscripto 🎉</h2>
               <p className="muted">
-                El evento empieza el <strong>{formatDate(event.listing_starts_at)}</strong>. Te avisaremos por email para que cargues tus juegos.
+                Está previsto que el evento empiece el <strong>{formatDate(event.listing_starts_at)}</strong>. Te avisaremos por email para que cargues tus juegos.
               </p>
             </div>
           )}

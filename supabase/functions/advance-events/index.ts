@@ -1,8 +1,8 @@
-// Avanza las etapas de los eventos (y corre el algoritmo al cerrar la etapa 2).
+// Avanza un evento a la etapa siguiente (y corre el algoritmo al cerrar la etapa 2),
+// avisando por email a los inscriptos.
 //
-// Dos formas de invocarla:
-//  - Tarea programada (pg_cron): header `x-cron-secret` = CRON_SECRET. Procesa todos los eventos vencidos.
-//  - Admin desde la web: JWT de un usuario admin + { event_id }. Fuerza el avance de ese evento.
+// Las etapas NUNCA avanzan solas por fecha: siempre las inicia un admin desde la web
+// (JWT de un usuario admin + { event_id }). Las fechas del evento son solo las previstas.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { APP_URL, escapeHtml, layout, sendEmails, type Mail } from '../_shared/email.ts';
@@ -26,15 +26,7 @@ const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
-    const cronSecret = Deno.env.get('CRON_SECRET');
-    const isCron = Boolean(cronSecret) && req.headers.get('x-cron-secret') === cronSecret;
-
-    if (isCron) {
-      const messages = await processDueEvents();
-      return json({ message: messages.join(' ') || 'Nada para avanzar.' });
-    }
-
-    // Llamada desde la web: exigir un admin autenticado.
+    // Solo un admin autenticado puede avanzar etapas.
     const token = req.headers.get('Authorization')?.replace(/^Bearer /i, '');
     if (!token) return json({ error: 'No autorizado' }, 401);
     const { data: userData, error: userErr } = await admin.auth.getUser(token);
@@ -46,7 +38,7 @@ Deno.serve(async (req) => {
     if (!event_id) return json({ error: 'Falta event_id' }, 400);
     const { data: ev } = await admin.from('events').select('*').eq('id', event_id).maybeSingle();
     if (!ev) return json({ error: 'Evento no encontrado' }, 404);
-    const message = await advance(ev as EventRow, true);
+    const message = await advance(ev as EventRow);
     return json({ message: message ?? 'Este evento no tiene una etapa para avanzar.' });
   } catch (err) {
     console.error(err);
@@ -54,36 +46,22 @@ Deno.serve(async (req) => {
   }
 });
 
-async function processDueEvents(): Promise<string[]> {
-  const { data, error } = await admin.from('events').select('*').in('status', ['upcoming', 'listing', 'wanting']);
-  if (error) throw error;
-  const out: string[] = [];
-  for (const ev of data as EventRow[]) {
-    try {
-      const m = await advance(ev, false);
-      if (m) out.push(m);
-    } catch (err) {
-      console.error(`Evento ${ev.id}:`, err);
-      out.push(`Error en "${ev.title}".`);
-    }
-  }
-  return out;
-}
-
-/** Avanza una etapa si corresponde (o siempre, con force). Devuelve un mensaje si hizo algo. */
-async function advance(ev: EventRow, force: boolean): Promise<string | null> {
+/** Pasa el evento a la etapa siguiente. Devuelve un mensaje si hizo algo. */
+async function advance(ev: EventRow): Promise<string | null> {
   const now = new Date();
   const nowIso = now.toISOString();
 
-  if (ev.status === 'upcoming' && (force || now >= new Date(ev.listing_starts_at))) {
+  // Si se avanza antes de la fecha prevista, la fecha pasa a ser la real. Si se avanza
+  // después, se deja la prevista (moverla podría romper el orden entre las fechas).
+  if (ev.status === 'upcoming') {
     const patch: Record<string, string> = { status: 'listing' };
-    if (force && now < new Date(ev.listing_starts_at)) patch.listing_starts_at = nowIso;
+    if (now < new Date(ev.listing_starts_at)) patch.listing_starts_at = nowIso;
     if (!(await claim(ev, 'upcoming', patch))) return null;
     const n = await notify(ev, `¡Empezó "${ev.title}"! Cargá tus juegos`, (name) =>
       layout(
         'Ya podés cargar tus juegos',
         `<p>Hola ${escapeHtml(name)}, empezó la <strong>etapa 1</strong> de <em>${escapeHtml(ev.title)}</em>.</p>
-         <p>Buscá cada juego que querés ofrecer, indicá su estado y el idioma. Tenés tiempo hasta el <strong>${fmt(ev.listing_ends_at)}</strong>.</p>`,
+         <p>Buscá cada juego que querés ofrecer, indicá su estado y el idioma.${planned(ev.listing_ends_at, now)}</p>`,
         `${APP_URL}/events/${ev.id}`,
         'Cargar mis juegos',
       ),
@@ -91,15 +69,15 @@ async function advance(ev: EventRow, force: boolean): Promise<string | null> {
     return `"${ev.title}": comenzó la etapa 1 (${n} emails).`;
   }
 
-  if (ev.status === 'listing' && (force || now >= new Date(ev.listing_ends_at))) {
+  if (ev.status === 'listing') {
     const patch: Record<string, string> = { status: 'wanting' };
-    if (force && now < new Date(ev.listing_ends_at)) patch.listing_ends_at = nowIso;
+    if (now < new Date(ev.listing_ends_at)) patch.listing_ends_at = nowIso;
     if (!(await claim(ev, 'listing', patch))) return null;
     const n = await notify(ev, `Etapa 2 de "${ev.title}": elegí tus cambios`, (name) =>
       layout(
         'Ya podés elegir tus cambios',
         `<p>Hola ${escapeHtml(name)}, se cerró la carga de juegos de <em>${escapeHtml(ev.title)}</em>.</p>
-         <p>Ahora podés ver todos los juegos ofrecidos y marcar, para cada uno de los tuyos, por cuáles lo cambiarías. Tenés tiempo hasta el <strong>${fmt(ev.wanting_ends_at)}</strong>.</p>`,
+         <p>Ahora podés ver todos los juegos ofrecidos y marcar, para cada uno de los tuyos, por cuáles lo cambiarías.${planned(ev.wanting_ends_at, now)}</p>`,
         `${APP_URL}/events/${ev.id}`,
         'Elegir mis cambios',
       ),
@@ -107,9 +85,9 @@ async function advance(ev: EventRow, force: boolean): Promise<string | null> {
     return `"${ev.title}": comenzó la etapa 2 (${n} emails).`;
   }
 
-  if (ev.status === 'wanting' && (force || now >= new Date(ev.wanting_ends_at))) {
+  if (ev.status === 'wanting') {
     const patch: Record<string, string> = { status: 'processing' };
-    if (force && now < new Date(ev.wanting_ends_at)) patch.wanting_ends_at = nowIso;
+    if (now < new Date(ev.wanting_ends_at)) patch.wanting_ends_at = nowIso;
     if (!(await claim(ev, 'wanting', patch))) return null;
     try {
       const summary = await runMatching(ev);
@@ -142,6 +120,12 @@ async function claim(ev: EventRow, from: Status, patch: Record<string, string>):
 
 function fmt(iso: string): string {
   return new Intl.DateTimeFormat('es-PY', { day: 'numeric', month: 'long', timeZone: 'America/Asuncion' }).format(new Date(iso));
+}
+
+/** Frase con el cierre previsto de la etapa, o nada si esa fecha ya pasó. */
+function planned(iso: string, now: Date): string {
+  if (new Date(iso) <= now) return '';
+  return ` El cierre está previsto para el <strong>${fmt(iso)}</strong>; te avisaremos por email cuando empiece la etapa siguiente.`;
 }
 
 async function notify(ev: EventRow, subject: string, html: (name: string) => string): Promise<number> {
