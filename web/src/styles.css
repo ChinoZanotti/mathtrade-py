@@ -73,6 +73,25 @@ a {
   color: var(--brand);
   font-weight: 600;
 }
+/* Links de texto (los que no tienen clase: botones, nav y tarjetas tienen la suya).
+   Subrayado grueso amarillo ficha que al pasar el mouse se vuelve "resaltador". */
+:is(main, footer) a:not([class]) {
+  color: var(--brand);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 3px;
+  border-radius: 4px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition: background 0.12s ease, text-decoration-color 0.12s ease, color 0.12s ease;
+}
+:is(main, footer) a:not([class]):hover {
+  color: color-mix(in srgb, var(--brand) 80%, var(--ink));
+  text-decoration-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+}
 code {
   background: var(--surface-2);
   padding: 0.1em 0.35em;
@@ -106,6 +125,19 @@ code {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Layout: el contenido ocupa el alto disponible para que el footer quede
+   al pie de la ventana aunque haya poco contenido. */
+.app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.app-main {
+  flex: 1;
+  width: 100%;
 }
 
 /* Barra superior */
@@ -624,6 +656,59 @@ input[type='checkbox'] {
 .bgg-results button:hover {
   background: var(--surface-2);
   border-color: var(--line);
+}
+
+/* Atribución a BGG (obligatoria por los términos de su API) */
+.bgg-credit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 8px;
+}
+.powered-bgg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.powered-bgg:hover {
+  border-color: var(--edge);
+}
+.powered-bgg strong {
+  color: #ff5100;
+}
+.powered-bgg img {
+  display: block;
+  height: 28px;
+  width: auto;
+}
+.powered-bgg:has(img) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.footer {
+  border-top: 2px solid var(--line);
+  background: var(--surface);
+}
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  padding-bottom: 14px;
 }
 
 /* Resultados */

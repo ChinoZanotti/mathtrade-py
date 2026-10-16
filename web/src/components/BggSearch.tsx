@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { BggResult } from '../lib/types';
+import PoweredByBgg from './PoweredByBgg';
 
 interface Props {
   onPick: (game: BggResult) => void;
@@ -33,7 +34,7 @@ export default function BggSearch({ onPick }: Props) {
         return;
       }
       setResults(data.results as BggResult[]);
-    }, 400);
+    }, 600); // espera a que termine de escribir: menos consultas a BGG
     return () => clearTimeout(t);
   }, [query]);
 
@@ -46,6 +47,9 @@ export default function BggSearch({ onPick }: Props) {
       {busy && <p className="small muted">Buscando…</p>}
       {error && <p className="alert error">{error}</p>}
       {!busy && !error && query.trim().length >= 3 && results.length === 0 && <p className="small muted">Sin resultados.</p>}
+      <div className="bgg-credit small muted">
+        Datos de juegos de BoardGameGeek <PoweredByBgg />
+      </div>
       <ul className="bgg-results">
         {results.map((g) => (
           <li key={g.id}>

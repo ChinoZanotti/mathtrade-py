@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Events from './pages/Events';
 import EventPage from './pages/EventPage';
 import Admin from './pages/Admin';
+import PoweredByBgg from './components/PoweredByBgg';
 
 export default function App() {
   const { session, profile, loading, signOut } = useAuth();
@@ -30,7 +31,7 @@ export default function App() {
   }
 
   return (
-    <>
+    <div className="app">
       <header className="topbar">
         <div className="container topbar-inner">
           <Link to="/" className="brand">
@@ -50,7 +51,7 @@ export default function App() {
           </div>
         </div>
       </header>
-      <main className="container">
+      <main className="container app-main">
         <Routes>
           <Route path="/" element={<Events />} />
           <Route path="/events/:id" element={<EventPage />} />
@@ -58,6 +59,12 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-    </>
+      <footer className="footer">
+        <div className="container footer-inner small muted">
+          <span>Los datos de los juegos provienen de <a href="https://boardgamegeek.com/" target="_blank" rel="noopener noreferrer">BoardGameGeek</a>.</span>
+          <PoweredByBgg />
+        </div>
+      </footer>
+    </div>
   );
 }

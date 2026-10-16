@@ -1,15 +1,22 @@
 // Busca juegos en BoardGameGeek (XML API 2). BGG exige un token de aplicación (BGG_TOKEN),
 // por eso la consulta pasa por esta función y no desde el navegador.
+// Los términos de la API piden cachear: cada búsqueda se guarda en `bgg_search_cache`
+// y se reutiliza durante CACHE_DAYS antes de volver a consultar a BGG.
+import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/cors.ts';
 
 const BGG = 'https://boardgamegeek.com/xmlapi2';
+const CACHE_DAYS = 7;
+
+const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+  auth: { persistSession: false },
+});
 
 interface Game {
   id: number;
   name: string;
   year: number | null;
   thumbnail: string | null;
-  rated: number;
 }
 
 function bggFetch(path: string): Promise<Response> {
@@ -43,36 +50,66 @@ async function fetchXml(path: string): Promise<string> {
   throw new Error('BGG no respondió a tiempo');
 }
 
+async function searchBgg(q: string): Promise<Game[]> {
+  const searchXml = await fetchXml(`/search?type=boardgame&query=${encodeURIComponent(q)}`);
+  const ids: number[] = [];
+  for (const m of searchXml.matchAll(/<item\b[^>]*\bid="(\d+)"/g)) {
+    const id = Number(m[1]);
+    if (!ids.includes(id)) ids.push(id);
+    if (ids.length >= 20) break;
+  }
+  if (!ids.length) return [];
+
+  const thingXml = await fetchXml(`/thing?stats=1&id=${ids.join(',')}`);
+  const games: (Game & { rated: number })[] = [];
+  for (const block of thingXml.split(/<item\b/).slice(1)) {
+    const id = Number(/\bid="(\d+)"/.exec(block)?.[1]);
+    const name = /<name\b[^>]*type="primary"[^>]*value="([^"]*)"/.exec(block)?.[1];
+    if (!id || !name) continue;
+    const year = Number(/<yearpublished\b[^>]*value="(\d+)"/.exec(block)?.[1]) || null;
+    const thumb = /<thumbnail>\s*([^<\s]+)\s*<\/thumbnail>/.exec(block)?.[1] ?? null;
+    const rated = Number(/<usersrated\b[^>]*value="(\d+)"/.exec(block)?.[1]) || 0;
+    games.push({ id, name: decode(name), year, thumbnail: thumb, rated });
+  }
+  // Los más conocidos primero, para que "Catan" no quede detrás de rarezas.
+  games.sort((a, b) => b.rated - a.rated);
+  return games.slice(0, 12).map(({ rated: _r, ...g }) => g);
+}
+
+async function readCache(key: string): Promise<Game[] | null> {
+  const since = new Date(Date.now() - CACHE_DAYS * 86_400_000).toISOString();
+  const { data, error } = await admin
+    .from('bgg_search_cache')
+    .select('results')
+    .eq('query', key)
+    .gte('fetched_at', since)
+    .maybeSingle();
+  if (error) console.error('Cache BGG (lectura):', error.message);
+  return (data?.results as Game[] | undefined) ?? null;
+}
+
+async function writeCache(key: string, results: Game[]): Promise<void> {
+  const { error } = await admin
+    .from('bgg_search_cache')
+    .upsert({ query: key, results, fetched_at: new Date().toISOString() });
+  if (error) console.error('Cache BGG (escritura):', error.message);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
     const { query } = await req.json();
-    const q = String(query ?? '').trim();
+    const q = String(query ?? '').trim().replace(/\s+/g, ' ');
     if (q.length < 3 || q.length > 100) return json({ results: [] });
 
-    const searchXml = await fetchXml(`/search?type=boardgame&query=${encodeURIComponent(q)}`);
-    const ids: number[] = [];
-    for (const m of searchXml.matchAll(/<item\b[^>]*\bid="(\d+)"/g)) {
-      const id = Number(m[1]);
-      if (!ids.includes(id)) ids.push(id);
-      if (ids.length >= 20) break;
-    }
-    if (!ids.length) return json({ results: [] });
+    // "Catan", "catan " y "CATAN" comparten la misma entrada de cache.
+    const key = q.toLowerCase();
+    const cached = await readCache(key);
+    if (cached) return json({ results: cached });
 
-    const thingXml = await fetchXml(`/thing?stats=1&id=${ids.join(',')}`);
-    const games: Game[] = [];
-    for (const block of thingXml.split(/<item\b/).slice(1)) {
-      const id = Number(/\bid="(\d+)"/.exec(block)?.[1]);
-      const name = /<name\b[^>]*type="primary"[^>]*value="([^"]*)"/.exec(block)?.[1];
-      if (!id || !name) continue;
-      const year = Number(/<yearpublished\b[^>]*value="(\d+)"/.exec(block)?.[1]) || null;
-      const thumb = /<thumbnail>\s*([^<\s]+)\s*<\/thumbnail>/.exec(block)?.[1] ?? null;
-      const rated = Number(/<usersrated\b[^>]*value="(\d+)"/.exec(block)?.[1]) || 0;
-      games.push({ id, name: decode(name), year, thumbnail: thumb, rated });
-    }
-    // Los más conocidos primero, para que "Catan" no quede detrás de rarezas.
-    games.sort((a, b) => b.rated - a.rated);
-    return json({ results: games.slice(0, 12).map(({ rated: _r, ...g }) => g) });
+    const results = await searchBgg(q);
+    await writeCache(key, results);
+    return json({ results });
   } catch (err) {
     console.error(err);
     return json({ error: 'No se pudo consultar BoardGameGeek' }, 502);
