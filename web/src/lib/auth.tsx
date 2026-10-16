@@ -1,12 +1,15 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from './supabase';
+import { recoveryInUrl, supabase } from './supabase';
 import type { Profile } from './types';
 
 interface AuthState {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  /** true si se entró con un link de recuperación: hay que pedir la contraseña nueva. */
+  recovering: boolean;
+  finishRecovery: () => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -15,6 +18,8 @@ const Ctx = createContext<AuthState>({
   session: null,
   profile: null,
   loading: true,
+  recovering: false,
+  finishRecovery: () => {},
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -23,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recovering, setRecovering] = useState(recoveryInUrl);
 
   async function loadProfile(userId: string | undefined) {
     if (!userId) {
@@ -39,8 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await loadProfile(data.session?.user.id);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
+      if (event === 'PASSWORD_RECOVERY') setRecovering(true);
+      if (event === 'SIGNED_OUT') setRecovering(false);
       // Diferido: no hacer llamadas a supabase dentro del callback de auth.
       setTimeout(() => void loadProfile(s?.user.id), 0);
     });
@@ -51,6 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     profile,
     loading,
+    recovering,
+    finishRecovery: () => setRecovering(false),
     signOut: async () => {
       await supabase.auth.signOut();
     },

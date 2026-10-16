@@ -2,13 +2,14 @@ import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './lib/auth';
 import { isConfigured } from './lib/supabase';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import Events from './pages/Events';
 import EventPage from './pages/EventPage';
 import Admin from './pages/Admin';
 import PoweredByBgg from './components/PoweredByBgg';
 
 export default function App() {
-  const { session, profile, loading, signOut } = useAuth();
+  const { session, profile, loading, recovering, signOut } = useAuth();
 
   if (!isConfigured) {
     return (
@@ -22,6 +23,8 @@ export default function App() {
     );
   }
   if (loading) return <div className="center muted">Cargando…</div>;
+  // Entró con el link de recuperación: primero tiene que elegir la contraseña nueva.
+  if (session && recovering) return <ResetPassword />;
   if (!session) {
     return (
       <Routes>

@@ -755,6 +755,24 @@ input[type='checkbox'] {
   height: auto;
   margin: 0 auto;
 }
+.login-links {
+  margin: 14px 0 0;
+  text-align: center;
+}
+.link-btn {
+  background: none;
+  border: 0;
+  padding: 4px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.link-btn:hover {
+  color: var(--ink);
+}
 
 @media (max-width: 640px) {
   .grid.two,
