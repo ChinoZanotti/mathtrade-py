@@ -36,5 +36,5 @@ Etapas (`events.status`): `upcoming` → `listing` → `wanting` → `processing
 ## Pendientes / ideas
 - UI para priorizar opciones por juego (la base de datos y el algoritmo ya soportan `rank`).
 - Protección contra recibir copias duplicadas del mismo juego (equivalente a los "dummy items" de TradeMaximizer).
-- Deploy de `web/` en Render con `render.yaml` (Blueprint). Para pruebas, "Confirm email" está desactivado en Supabase Auth: reactivarlo con SMTP propio antes del uso real.
+- Producción: https://mathtrade.com.py (Render con `render.yaml`; DNS en Cloudflare, registros en "DNS only"). Emails de Supabase Auth por SMTP de Resend desde `no-reply@mathtrade.com.py`, con "Confirm email" activo.
 - Para eventos de más de ~1000 juegos, correr el algoritmo fuera de la Edge Function (es O(n³) por iteración).
