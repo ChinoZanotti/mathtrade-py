@@ -23,7 +23,8 @@ export default function Login() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { display_name: name.trim() } },
+          // El link de confirmación vuelve al mismo sitio (localhost o Render).
+          options: { data: { display_name: name.trim() }, emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
         if (!data.session) setInfo('Te enviamos un email para confirmar tu cuenta. Después podés iniciar sesión.');

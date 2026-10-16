@@ -36,5 +36,5 @@ Etapas (`events.status`): `upcoming` → `listing` → `wanting` → `processing
 ## Pendientes / ideas
 - UI para priorizar opciones por juego (la base de datos y el algoritmo ya soportan `rank`).
 - Protección contra recibir copias duplicadas del mismo juego (equivalente a los "dummy items" de TradeMaximizer).
-- Deploy: Supabase (base + funciones) y Render Static Site para `web/` (reescribir todas las rutas a `index.html`).
+- Deploy de `web/` en Render con `render.yaml` (Blueprint). Para pruebas, "Confirm email" está desactivado en Supabase Auth: reactivarlo con SMTP propio antes del uso real.
 - Para eventos de más de ~1000 juegos, correr el algoritmo fuera de la Edge Function (es O(n³) por iteración).

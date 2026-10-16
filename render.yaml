@@ -1,0 +1,26 @@
+# Blueprint de Render: publica web/ como Static Site.
+# Las variables VITE_* se cargan a mano en el panel de Render (sync: false).
+services:
+  - type: web
+    runtime: static
+    name: mathtrade-py
+    rootDir: web
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+    headers:
+      # Los archivos de Vite llevan hash en el nombre: se pueden cachear para siempre.
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+    routes:
+      # BrowserRouter: toda ruta desconocida sirve index.html.
+      - type: rewrite
+        source: /*
+        destination: /index.html

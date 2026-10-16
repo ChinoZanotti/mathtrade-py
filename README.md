@@ -38,8 +38,9 @@ elección de cambios y cálculo automático de los intercambios (ciclos) que max
    - `CRON_SECRET`: cadena larga aleatoria.
 4. **Deploy de funciones:** `supabase functions deploy bgg-search advance-events`.
 5. **Cron:** habilitar `pg_cron` y `pg_net`, editar y ejecutar `supabase/cron.sql`.
-6. **Frontend:** `cp web/.env.example web/.env`, completar URL y anon key, `npm --prefix web install && npm --prefix web run dev`. Para producción, `npm --prefix web run build` y publicar `web/dist` (Render Static Site, Vercel, etc.; reescribir todas las rutas a `index.html`).
-7. En Supabase Auth, configurar la URL del sitio y (opcional) un SMTP propio para los emails de confirmación de cuenta.
+6. **Frontend:** `cp web/.env.example web/.env`, completar URL y anon key, `npm --prefix web install && npm --prefix web run dev`. 
+7. **Deploy en Render:** New → Blueprint → elegir este repo (usa `render.yaml`: Static Site desde `web/`, reescritura de rutas a `index.html`). Cargar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en el panel.
+8. **Supabase Auth → URL Configuration:** Site URL = URL de Render; en Redirect URLs, esa URL y `http://localhost:5173/**`. El SMTP por defecto de Supabase manda pocos emails por hora: para pruebas se puede desactivar "Confirm email"; para uso real, configurar un SMTP propio (p. ej. Resend) y reactivarlo.
 
 ## Tests
 
