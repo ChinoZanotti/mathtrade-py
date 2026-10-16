@@ -88,12 +88,17 @@ export default function EventPage() {
         )}
       </p>
 
-      {profile?.is_admin && event.status === 'finished' && (
-        <p>
-          <Link className="btn small" to={`/admin/events/${event.id}/intercambios`}>
-            Ver todos los intercambios y entregas
+      {profile?.is_admin && (
+        <div className="row gap">
+          <Link className="btn ghost small" to={`/admin/events/${event.id}/participantes`}>
+            Ver participantes
           </Link>
-        </p>
+          {event.status === 'finished' && (
+            <Link className="btn small" to={`/admin/events/${event.id}/intercambios`}>
+              Ver todos los intercambios y entregas
+            </Link>
+          )}
+        </div>
       )}
 
       {!joined && canJoin && (

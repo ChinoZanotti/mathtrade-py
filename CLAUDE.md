@@ -10,6 +10,8 @@ Etapas (`events.status`): `upcoming` → `listing` → `wanting` → `processing
 4. Al cerrar, `advance-events` corre el algoritmo y guarda `trades`, `event_results` y `event_inputs`.
 5. En el evento presencial, los admins marcan cada juego entregado en `/admin/events/:id/intercambios` (`trades.delivered_at`); los participantes lo ven en solo lectura.
 
+En *Administrar*, cada evento tiene un panel de participantes (`/admin/events/:id/participantes`): inscriptos, quién cargó juegos y su email. El email sale de `auth.users` mediante la función `admin_event_participants`, que solo responde a admins.
+
 Las etapas **nunca avanzan solas por fecha** (decisión de Chino): siempre las inicia un admin desde *Administrar*, y ahí `advance-events` manda los emails a los inscriptos. Las fechas del evento son solo las previstas. No agregar cron ni avance automático.
 
 ## Stack

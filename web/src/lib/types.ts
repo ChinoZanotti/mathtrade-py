@@ -46,6 +46,15 @@ export interface Trade {
   delivered_by: string | null;
 }
 
+/** Fila de `admin_event_participants` (solo admins). */
+export interface ParticipantSummary {
+  user_id: string;
+  display_name: string;
+  email: string;
+  joined_at: string;
+  items: number;
+}
+
 export interface BggResult {
   id: number;
   name: string;

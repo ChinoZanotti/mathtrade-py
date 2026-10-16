@@ -156,6 +156,9 @@ export default function Admin() {
                   {NEXT_LABEL[ev.status]}
                 </button>
               )}
+              <Link className="btn ghost small" to={`/admin/events/${ev.id}/participantes`}>
+                Participantes
+              </Link>
               {ev.status === 'finished' && (
                 <Link className="btn small" to={`/admin/events/${ev.id}/intercambios`}>
                   Ver intercambios y entregas
