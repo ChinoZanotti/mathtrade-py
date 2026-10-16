@@ -191,7 +191,7 @@ export default function AdminTrades() {
                           <span className="delivery-body">
                             <span className="delivery-title">{d.item.title}</span>
                             <span className="small muted">
-                              → <strong>{d.receiver}</strong>
+                              de <strong>{d.giver}</strong> → a <strong>{d.receiver}</strong>
                               {d.trade.delivered_at && <> · entregado {formatDateTime(d.trade.delivered_at)}</>}
                             </span>
                           </span>
