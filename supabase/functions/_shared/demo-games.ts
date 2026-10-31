@@ -57,6 +57,7 @@ const LIST: [number, string, number][] = [
   [70919, 'Takenoko', 2011],
   [131357, 'Coup', 2012],
   [128882, 'The Resistance: Avalon', 2012],
+  [84419, 'Space Empires 4X', 2011],
 ];
 
 export const DEMO_GAMES: DemoGame[] = LIST.map(([id, name, year]) => ({ id, name, year, thumbnail: null }));
