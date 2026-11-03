@@ -735,7 +735,7 @@ input[type='checkbox'] {
 /* Participantes (admin) */
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px;
   margin: 16px 0;
 }
@@ -760,6 +760,12 @@ input[type='checkbox'] {
 .participant p {
   margin: 2px 0 0;
   overflow-wrap: anywhere;
+}
+.participant-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
 }
 @media (max-width: 640px) {
   .stats {

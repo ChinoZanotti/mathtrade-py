@@ -53,6 +53,8 @@ export interface ParticipantSummary {
   email: string;
   joined_at: string;
   items: number;
+  /** Juegos con al menos una opción de cambio elegida (etapa 2). */
+  items_with_wants: number;
 }
 
 export interface BggResult {

@@ -35,7 +35,7 @@ export default function AdminParticipants() {
     if (ps.error) return setError(ps.error.message);
     setError(null);
     setEvent(ev.data as TradeEvent);
-    setRows((ps.data as ParticipantSummary[]).map((r) => ({ ...r, items: Number(r.items) })));
+    setRows((ps.data as ParticipantSummary[]).map((r) => ({ ...r, items: Number(r.items), items_with_wants: Number(r.items_with_wants) })));
   }, [id]);
 
   useEffect(() => {
@@ -59,8 +59,15 @@ export default function AdminParticipants() {
     });
   }, [sorted, query, filter]);
 
+  // En la etapa 2 ya no se pueden cargar juegos: lo pendiente es elegir opciones.
+  const wanting = event?.status === 'wanting';
+  const missing = useMemo(
+    () => sorted.filter((r) => (wanting ? r.items > 0 && r.items_with_wants === 0 : r.items === 0)),
+    [sorted, wanting],
+  );
+
   async function copyMissing() {
-    const emails = sorted.filter((r) => r.items === 0).map((r) => r.email);
+    const emails = missing.map((r) => r.email);
     try {
       await navigator.clipboard.writeText(emails.join(', '));
       setNotice(`Copiados ${emails.length} ${emails.length === 1 ? 'email' : 'emails'}.`);
@@ -75,6 +82,9 @@ export default function AdminParticipants() {
   const total = rows.length;
   const loaded = rows.filter((r) => r.items > 0).length;
   const games = rows.reduce((s, r) => s + r.items, 0);
+  // Las opciones de cambio solo tienen sentido desde la etapa 2.
+  const showWants = ['wanting', 'processing', 'finished'].includes(event.status);
+  const chose = rows.filter((r) => r.items_with_wants > 0).length;
 
   return (
     <>
@@ -105,6 +115,15 @@ export default function AdminParticipants() {
           <span className="stat-num">{games}</span>
           <span className="small muted">Juegos cargados</span>
         </div>
+        {showWants && (
+          <div className="card stat">
+            <span className="stat-num">
+              {chose}
+              <span className="stat-of"> de {loaded}</span>
+            </span>
+            <span className="small muted">Ya eligieron opciones</span>
+          </div>
+        )}
       </div>
 
       <div className="toolbar">
@@ -118,8 +137,8 @@ export default function AdminParticipants() {
         <button className="btn ghost small" disabled={loading} onClick={() => void load()}>
           Actualizar
         </button>
-        <button className="btn small" disabled={total === loaded} onClick={() => void copyMissing()}>
-          Copiar emails de quienes no cargaron
+        <button className="btn small" disabled={missing.length === 0} onClick={() => void copyMissing()}>
+          {wanting ? 'Copiar emails de quienes no eligieron opciones' : 'Copiar emails de quienes no cargaron'}
         </button>
       </div>
       <div className="chips-row">
@@ -140,9 +159,18 @@ export default function AdminParticipants() {
                 <a href={`mailto:${r.email}`}>{r.email}</a> · inscripto el {formatDate(r.joined_at)}
               </p>
             </div>
-            <span className={`pill ${r.items > 0 ? 'ok' : ''}`}>
-              {r.items === 0 ? 'Sin juegos' : `${r.items} ${r.items === 1 ? 'juego' : 'juegos'}`}
-            </span>
+            <div className="participant-pills">
+              <span className={`pill ${r.items > 0 ? 'ok' : ''}`}>
+                {r.items === 0 ? 'Sin juegos' : `Ofrece ${r.items} ${r.items === 1 ? 'juego' : 'juegos'}`}
+              </span>
+              {showWants && r.items > 0 && (
+                <span className={`pill ${r.items_with_wants === r.items ? 'ok' : ''}`}>
+                  {r.items_with_wants === 0
+                    ? 'Sin opciones elegidas'
+                    : `${r.items_with_wants} de ${r.items} con opciones`}
+                </span>
+              )}
+            </div>
           </div>
         ))}
       </div>
