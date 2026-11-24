@@ -17,6 +17,14 @@ if (!URL_BASE || !KEY) {
   process.exit(1);
 }
 
+// Nunca crear datos de prueba en producción: las cuentas tienen una clave conocida.
+// Solo se permite "borrar", para poder limpiar si alguna vez quedaron.
+const PROD_REF = 'vougsxyvzbkeyxbqpntk';
+if (URL_BASE.includes(PROD_REF) && process.argv[2] !== 'borrar') {
+  console.error('scripts/.env apunta a producción. Usá un proyecto de pruebas o Supabase local para el seed.');
+  process.exit(1);
+}
+
 const DOMAIN = 'mathtrade.test';
 const PASSWORD = 'prueba1234';
 const CONDITIONS = ['nuevo', 'como_nuevo', 'buen_estado', 'buen_estado', 'mucho_uso'];
