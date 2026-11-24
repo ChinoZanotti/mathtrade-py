@@ -4,6 +4,7 @@ import { CONDITIONS, LANGUAGES } from '../lib/format';
 import type { BggResult, EventItem, TradeEvent } from '../lib/types';
 import BggSearch from '../components/BggSearch';
 import ItemCard from '../components/ItemCard';
+import SkeletonItems from '../components/Skeleton';
 
 interface Draft {
   bgg_id: number;
@@ -181,7 +182,7 @@ export default function ListingStage({ event, userId }: { event: TradeEvent; use
       )}
 
       <h3>Tu lista {items ? `(${items.length})` : ''}</h3>
-      {!items && <p className="muted">Cargando…</p>}
+      {!items && <SkeletonItems count={3} label="Cargando tus juegos…" />}
       {items && items.length === 0 && <p className="muted">Todavía no cargaste ningún juego.</p>}
       <div className="stack">
         {items?.map((it) => (

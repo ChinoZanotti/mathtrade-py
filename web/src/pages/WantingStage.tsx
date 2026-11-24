@@ -3,6 +3,10 @@ import { supabase } from '../lib/supabase';
 import type { EventItem, TradeEvent, Want } from '../lib/types';
 import ItemCard from '../components/ItemCard';
 import GameFilters, { EMPTY_FILTER, isFiltering, matchesFilter, type GameFilterValue } from '../components/GameFilters';
+import SkeletonItems from '../components/Skeleton';
+
+// Cuánto tiempo queda disponible "Deshacer" después de quitar todos los elegidos.
+const UNDO_MS = 8000;
 
 type Tab = 'wants' | 'catalog';
 type View = 'all' | 'picked' | 'unpicked';
@@ -28,6 +32,9 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
   // Cambios en vuelo, por "juegoPropio:juegoAjeno": evita dobles clics y alimenta el indicador de guardado.
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [saveFailed, setSaveFailed] = useState(false);
+  // Último "Quitar todos", para poder deshacerlo durante unos segundos.
+  const [undo, setUndo] = useState<{ itemId: string; title: string; ids: string[] } | null>(null);
+  const undoTimer = useRef<number>();
   const step2Ref = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLElement>(null);
 
@@ -131,31 +138,59 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
     }
   }
 
-  async function clearAll() {
-    if (!activeId || !activeWants.size) return;
-    if (!confirm('¿Quitar todas las opciones elegidas para este juego?')) return;
-    const itemId = activeId;
+  /** Cambia todas las opciones de un juego propio de una vez (para "Quitar todos" y "Deshacer"). */
+  async function replaceAll(itemId: string, ids: string[], op: () => PromiseLike<{ error: { message: string } | null }>) {
+    const key = `${itemId}:*`;
+    const before = new Set(wants.get(itemId) ?? []);
+    setError(null);
     setSaveFailed(false);
-    setPending((p) => new Set(p).add(`${itemId}:*`));
-    const { error } = await supabase.from('item_wants').delete().eq('item_id', itemId);
+    setWants((prevMap) => new Map(prevMap).set(itemId, new Set(ids))); // optimista
+    setPending((p) => new Set(p).add(key));
+    const { error } = await op();
     setPending((p) => {
       const n = new Set(p);
-      n.delete(`${itemId}:*`);
+      n.delete(key);
       return n;
     });
     if (error) {
+      setWants((prevMap) => new Map(prevMap).set(itemId, before)); // revertir
       setSaveFailed(true);
-      return setError(`No se pudo guardar el cambio. Probá de nuevo. (${error.message})`);
+      setError(`No se pudo guardar el cambio. Probá de nuevo. (${error.message})`);
+      return false;
     }
-    setWants((prevMap) => new Map(prevMap).set(itemId, new Set()));
+    return true;
   }
+
+  // Sin confirmación: se quita al instante y se ofrece "Deshacer" durante unos segundos.
+  async function clearAll() {
+    if (!active || !activeWants.size) return;
+    const itemId = active.id;
+    const ids = [...activeWants];
+    const ok = await replaceAll(itemId, [], () => supabase.from('item_wants').delete().eq('item_id', itemId));
+    if (!ok) return;
+    window.clearTimeout(undoTimer.current);
+    setUndo({ itemId, title: active.title, ids });
+    undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS);
+  }
+
+  async function undoClear() {
+    if (!undo) return;
+    window.clearTimeout(undoTimer.current);
+    setUndo(null);
+    // `rank` vuelve vacío: hoy la interfaz no permite cargarlo.
+    await replaceAll(undo.itemId, undo.ids, () =>
+      supabase.from('item_wants').insert(undo.ids.map((wanted_item_id) => ({ item_id: undo.itemId, wanted_item_id }))),
+    );
+  }
+
+  useEffect(() => () => window.clearTimeout(undoTimer.current), []);
 
   function clearFilters() {
     setFilter(EMPTY_FILTER);
     setView('all');
   }
 
-  if (!items) return <p className="muted">Cargando juegos…</p>;
+  if (!items) return <SkeletonItems label="Cargando juegos…" />;
 
   const titleOf = new Map(items.map((i) => [i.id, i.title]));
 
@@ -409,6 +444,19 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
           </div>
         </div>
       )}
+
+      <div className="toast-region" role="status">
+        {undo && (
+          <div className="toast">
+            <span>
+              Quitaste {undo.ids.length === 1 ? '1 opción' : `${undo.ids.length} opciones`} de <strong>{undo.title}</strong>.
+            </span>
+            <button className="btn small" onClick={() => void undoClear()}>
+              Deshacer
+            </button>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { EventItem, TradeEvent, Trade } from '../lib/types';
 import ItemCard from '../components/ItemCard';
+import SkeletonItems from '../components/Skeleton';
 
 interface Stats {
   numItems: number;
@@ -41,7 +42,7 @@ export default function ResultsStage({ event, userId }: { event: TradeEvent; use
   // Los ciclos completos solo se muestran a los admins, en /admin/events/:id/intercambios.
 
   if (error) return <p className="alert error">{error}</p>;
-  if (!items) return <p className="muted">Cargando resultados…</p>;
+  if (!items) return <SkeletonItems count={3} label="Cargando resultados…" />;
 
   const myItems = items.filter((i) => i.owner_id === userId);
   const myTraded = myItems.filter((i) => tradeByItem.has(i.id));

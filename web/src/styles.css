@@ -938,6 +938,77 @@ input[type='checkbox'] {
 .review-body p {
   margin: 2px 0 0;
 }
+/* Placeholders de carga con forma de tarjeta. */
+.sk {
+  background: linear-gradient(90deg, var(--surface-2) 0%, color-mix(in srgb, var(--surface-2) 40%, var(--surface)) 50%, var(--surface-2) 100%);
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+.thumb.sk {
+  border-color: var(--line);
+}
+.sk-line {
+  height: 18px;
+  margin: 4px 0 8px;
+}
+.sk-line.short {
+  width: 25%;
+  height: 12px;
+}
+.sk-pills {
+  display: flex;
+  gap: 6px;
+}
+.sk-pill {
+  display: block;
+  width: 76px;
+  height: 22px;
+  border-radius: 999px;
+}
+@keyframes sk-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* Aviso flotante con acción (p. ej. "Deshacer"). */
+.toast-region {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 20px;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+  z-index: 10;
+}
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 560px;
+  padding: 10px 12px 10px 18px;
+  background: var(--ink);
+  color: var(--surface);
+  border: 2px solid var(--edge);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--edge-shadow) 30%, transparent);
+  font-weight: 600;
+}
+.toast .btn {
+  flex: none;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  box-shadow: none;
+}
+
 @media (max-width: 760px) {
   .wanting {
     grid-template-columns: 1fr;
@@ -1226,6 +1297,22 @@ input[type='checkbox'] {
   .nav {
     order: 3;
     width: 100%;
+  }
+  /* Áreas táctiles cómodas (≈44px) para el dedo. */
+  .btn.small,
+  .pick,
+  .segmented button,
+  .tabs button,
+  .chip {
+    min-height: 44px;
+  }
+  .btn.small {
+    padding: 8px 14px;
+  }
+  .segmented button,
+  .tabs button {
+    padding-left: 14px;
+    padding-right: 14px;
   }
   /* En celular la barra superior ocupa dos filas. */
   .wanting-stage {
