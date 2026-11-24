@@ -790,6 +790,10 @@ input[type='checkbox'] {
 .choose {
   scroll-margin-top: var(--sticky-top);
 }
+/* Más aire que la sombra-escudo de .choose-head (16px), para que no tape el título. */
+.choose .step-title {
+  margin-bottom: 20px;
+}
 .choose-head {
   position: sticky;
   top: var(--sticky-top);
