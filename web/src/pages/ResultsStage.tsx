@@ -38,11 +38,7 @@ export default function ResultsStage({ event, userId }: { event: TradeEvent; use
     return m;
   }, [trades]);
   const tradeByItem = useMemo(() => new Map(trades.map((t) => [t.item_id, t])), [trades]);
-  const cycles = useMemo(() => {
-    const m = new Map<number, Trade[]>();
-    for (const t of trades) m.set(t.cycle_no, [...(m.get(t.cycle_no) ?? []), t]);
-    return [...m.values()];
-  }, [trades]);
+  // Los ciclos completos solo se muestran a los admins, en /admin/events/:id/intercambios.
 
   if (error) return <p className="alert error">{error}</p>;
   if (!items) return <p className="muted">Cargando resultados…</p>;
@@ -101,27 +97,6 @@ export default function ResultsStage({ event, userId }: { event: TradeEvent; use
           <div key={mi.id} className="card muted-card">
             <ItemCard item={mi} mine showOwner={false} />
             <p className="small muted">No hubo intercambio para este juego. Te lo quedás.</p>
-          </div>
-        ))}
-      </div>
-
-      <h3>Todos los ciclos</h3>
-      <p className="small muted">En cada ciclo, cada persona envía su juego a la siguiente y recibe el de la anterior.</p>
-      <div className="stack">
-        {cycles.map((c, idx) => (
-          <div key={idx} className="card">
-            <p className="small muted">Ciclo {idx + 1} · {c.length} personas</p>
-            <ul className="cycle">
-              {c.map((t) => {
-                const give = byId.get(t.item_id);
-                const get = byId.get(t.receives_item_id);
-                return (
-                  <li key={t.item_id} className={give?.owner_id === userId ? 'me' : ''}>
-                    <strong>{give?.profiles?.display_name}</strong> recibe <em>{get?.title}</em> de {get?.profiles?.display_name}
-                  </li>
-                );
-              })}
-            </ul>
           </div>
         ))}
       </div>

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { EventItem, TradeEvent, Want } from '../lib/types';
-import { CONDITIONS } from '../lib/format';
 import ItemCard from '../components/ItemCard';
+import GameFilters, { EMPTY_FILTER, isFiltering, matchesFilter, type GameFilterValue } from '../components/GameFilters';
 
 type Tab = 'wants' | 'catalog';
 type View = 'all' | 'picked' | 'unpicked';
@@ -21,8 +21,8 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
   const [tab, setTab] = useState<Tab>('wants');
   const [activeId, setActiveId] = useState<string | null>(null);
   const [reviewing, setReviewing] = useState(false);
-  const [query, setQuery] = useState('');
-  const [condition, setCondition] = useState('');
+  const [filter, setFilter] = useState<GameFilterValue>(EMPTY_FILTER);
+  const [catalogFilter, setCatalogFilter] = useState<GameFilterValue>(EMPTY_FILTER);
   const [view, setView] = useState<View>('all');
   const [error, setError] = useState<string | null>(null);
   // Cambios en vuelo, por "juegoPropio:juegoAjeno": evita dobles clics y alimenta el indicador de guardado.
@@ -69,22 +69,17 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
 
   const visible = useMemo(() => {
     const picked = (activeId && wants.get(activeId)) || new Set<string>();
-    const q = query.trim().toLowerCase();
     return others.filter((o) => {
       if (view === 'picked' && !picked.has(o.id)) return false;
       if (view === 'unpicked' && picked.has(o.id)) return false;
-      if (condition && o.condition !== condition) return false;
-      if (!q) return true;
-      return (
-        o.title.toLowerCase().includes(q) ||
-        (o.profiles?.display_name ?? '').toLowerCase().includes(q) ||
-        o.language.toLowerCase().includes(q)
-      );
+      return matchesFilter(o, filter);
     });
-  }, [others, query, condition, view, wants, activeId]);
+  }, [others, filter, view, wants, activeId]);
+
+  const catalogVisible = useMemo(() => (items ?? []).filter((i) => matchesFilter(i, catalogFilter)), [items, catalogFilter]);
 
   const activeWants = (activeId && wants.get(activeId)) || new Set<string>();
-  const filtering = query.trim() !== '' || condition !== '' || view !== 'all';
+  const filtering = isFiltering(filter) || view !== 'all';
 
   function scrollTo(el: HTMLElement | null) {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -156,8 +151,7 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
   }
 
   function clearFilters() {
-    setQuery('');
-    setCondition('');
+    setFilter(EMPTY_FILTER);
     setView('all');
   }
 
@@ -197,11 +191,25 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
       )}
 
       {tab === 'catalog' && (
-        <div className="stack">
-          {items.map((it) => (
-            <ItemCard key={it.id} item={it} mine={it.owner_id === userId} />
-          ))}
-        </div>
+        <>
+          <GameFilters value={catalogFilter} onChange={setCatalogFilter} />
+          <div className="showing">
+            <span aria-live="polite">
+              {isFiltering(catalogFilter) ? `Mostrando ${catalogVisible.length} de ${items.length} juegos` : `Mostrando ${items.length} juegos`}
+            </span>
+            {isFiltering(catalogFilter) && (
+              <button className="link-btn" onClick={() => setCatalogFilter(EMPTY_FILTER)}>
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+          <div className="stack">
+            {catalogVisible.map((it) => (
+              <ItemCard key={it.id} item={it} mine={it.owner_id === userId} />
+            ))}
+            {catalogVisible.length === 0 && items.length > 0 && <p className="muted">Ningún juego coincide con el filtro. Probá quitar alguno.</p>}
+          </div>
+        </>
       )}
 
       {tab === 'wants' && mine.length === 0 && (
@@ -327,22 +335,7 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
               </div>
             )}
 
-            <div className="toolbar">
-              <input
-                className="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar por título, dueño o idioma…"
-                aria-label="Buscar juegos"
-              />
-              <select value={condition} onChange={(e) => setCondition(e.target.value)} aria-label="Filtrar por estado">
-                <option value="">Estado: todos</option>
-                {CONDITIONS.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+            <GameFilters value={filter} onChange={setFilter}>
               <div className="segmented" role="group" aria-label="Mostrar">
                 {VIEWS.map((v) => (
                   <button key={v.value} aria-pressed={view === v.value} className={view === v.value ? 'on' : ''} onClick={() => setView(v.value)}>
@@ -350,7 +343,7 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
                   </button>
                 ))}
               </div>
-            </div>
+            </GameFilters>
             <div className="showing">
               <span aria-live="polite">
                 {filtering ? `Mostrando ${visible.length} de ${others.length} juegos` : `Mostrando ${others.length} juegos`}

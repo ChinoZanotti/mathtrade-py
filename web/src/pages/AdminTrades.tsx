@@ -6,6 +6,7 @@ import { formatDateTime } from '../lib/format';
 import type { EventItem, TradeEvent, Trade } from '../lib/types';
 
 type Filter = 'pending' | 'delivered' | 'all';
+type View = 'deliveries' | 'cycles';
 
 const FILTERS: { value: Filter; label: string }[] = [
   { value: 'pending', label: 'Pendientes' },
@@ -33,6 +34,7 @@ export default function AdminTrades() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('pending');
+  const [view, setView] = useState<View>('deliveries');
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
@@ -86,6 +88,18 @@ export default function AdminTrades() {
       .sort(([a], [b]) => a.localeCompare(b, 'es'))
       .map(([giver, list]) => ({ giver, list: list.sort((a, b) => a.item.title.localeCompare(b.item.title, 'es')) }));
   }, [deliveries, query, filter]);
+
+  // Ciclos completos: en cada uno, cada persona recibe el juego de la anterior.
+  // El número de ciclo se calcula antes de filtrar para que no cambie al buscar.
+  const cycles = useMemo(() => {
+    const byCycle = new Map<number, Delivery[]>();
+    for (const d of deliveries) byCycle.set(d.trade.cycle_no, [...(byCycle.get(d.trade.cycle_no) ?? []), d]);
+    const q = norm(query.trim());
+    return [...byCycle.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([, list], idx) => ({ n: idx + 1, list }))
+      .filter(({ list }) => !q || list.some((d) => norm(`${d.giver} ${d.receiver} ${d.item.title}`).includes(q)));
+  }, [deliveries, query]);
 
   const pendingByGiver = useMemo(() => {
     const m = new Map<string, number>();
@@ -155,54 +169,91 @@ export default function AdminTrades() {
               placeholder="Buscar por persona o juego…"
               aria-label="Buscar entregas"
             />
-          </div>
-          <div className="chips-row">
-            {FILTERS.map((f) => (
-              <button key={f.value} className={`chip ${filter === f.value ? 'on' : ''}`} onClick={() => setFilter(f.value)}>
-                {f.label}
+            <div className="segmented" role="group" aria-label="Ver">
+              <button aria-pressed={view === 'deliveries'} className={view === 'deliveries' ? 'on' : ''} onClick={() => setView('deliveries')}>
+                Entregas por persona
               </button>
-            ))}
+              <button aria-pressed={view === 'cycles'} className={view === 'cycles' ? 'on' : ''} onClick={() => setView('cycles')}>
+                Ciclos
+              </button>
+            </div>
           </div>
 
-          {groups.length === 0 && (
-            <p className="muted">{total === 0 ? 'No hubo intercambios en este evento.' : 'No hay entregas que coincidan.'}</p>
-          )}
-          <div className="stack">
-            {groups.map(({ giver, list }) => {
-              const pending = pendingByGiver.get(giver) ?? 0;
-              return (
-                <div key={giver} className="card">
-                  <div className="row between">
-                    <h3 className="delivery-giver">{giver}</h3>
-                    <span className={`pill ${pending ? '' : 'ok'}`}>{pending ? `${pending} por entregar` : 'Todo entregado ✓'}</span>
+          {view === 'cycles' && (
+            <>
+              <p className="small muted">En cada ciclo, cada persona entrega su juego a la siguiente y recibe el de la anterior.</p>
+              {cycles.length === 0 && <p className="muted">{total === 0 ? 'No hubo intercambios en este evento.' : 'Ningún ciclo coincide.'}</p>}
+              <div className="stack">
+                {cycles.map(({ n, list }) => (
+                  <div key={n} className="card">
+                    <p className="small muted cycle-head">
+                      Ciclo {n} · {list.length} personas
+                    </p>
+                    <ul className="cycle">
+                      {list.map((d) => (
+                        <li key={d.trade.item_id}>
+                          <strong>{d.receiver}</strong> recibe <em>{d.item.title}</em> de {d.giver}
+                          {d.trade.delivered_at && <span className="pill ok">Entregado ✓</span>}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <ul className="deliveries">
-                    {list.map((d) => (
-                      <li key={d.trade.item_id} className={d.trade.delivered_at ? 'done' : ''}>
-                        <label>
-                          <input type="checkbox" checked={Boolean(d.trade.delivered_at)} onChange={() => void toggle(d.trade)} />
-                          {d.item.thumbnail_url ? (
-                            <img src={d.item.thumbnail_url} alt="" loading="lazy" className="thumb small" />
-                          ) : (
-                            <span className="thumb small placeholder" aria-hidden>
-                              🎲
-                            </span>
-                          )}
-                          <span className="delivery-body">
-                            <span className="delivery-title">{d.item.title}</span>
-                            <span className="small muted">
-                              de <strong>{d.giver}</strong> → a <strong>{d.receiver}</strong>
-                              {d.trade.delivered_at && <> · entregado {formatDateTime(d.trade.delivered_at)}</>}
-                            </span>
-                          </span>
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {view === 'deliveries' && (
+            <>
+              <div className="chips-row">
+                {FILTERS.map((f) => (
+                  <button key={f.value} className={`chip ${filter === f.value ? 'on' : ''}`} onClick={() => setFilter(f.value)}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+    
+              {groups.length === 0 && (
+                <p className="muted">{total === 0 ? 'No hubo intercambios en este evento.' : 'No hay entregas que coincidan.'}</p>
+              )}
+              <div className="stack">
+                {groups.map(({ giver, list }) => {
+                  const pending = pendingByGiver.get(giver) ?? 0;
+                  return (
+                    <div key={giver} className="card">
+                      <div className="row between">
+                        <h3 className="delivery-giver">{giver}</h3>
+                        <span className={`pill ${pending ? '' : 'ok'}`}>{pending ? `${pending} por entregar` : 'Todo entregado ✓'}</span>
+                      </div>
+                      <ul className="deliveries">
+                        {list.map((d) => (
+                          <li key={d.trade.item_id} className={d.trade.delivered_at ? 'done' : ''}>
+                            <label>
+                              <input type="checkbox" checked={Boolean(d.trade.delivered_at)} onChange={() => void toggle(d.trade)} />
+                              {d.item.thumbnail_url ? (
+                                <img src={d.item.thumbnail_url} alt="" loading="lazy" className="thumb small" />
+                              ) : (
+                                <span className="thumb small placeholder" aria-hidden>
+                                  🎲
+                                </span>
+                              )}
+                              <span className="delivery-body">
+                                <span className="delivery-title">{d.item.title}</span>
+                                <span className="small muted">
+                                  de <strong>{d.giver}</strong> → a <strong>{d.receiver}</strong>
+                                  {d.trade.delivered_at && <> · entregado {formatDateTime(d.trade.delivered_at)}</>}
+                                </span>
+                              </span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </>
       )}
     </>

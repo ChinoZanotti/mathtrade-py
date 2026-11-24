@@ -1047,9 +1047,14 @@ input[type='checkbox'] {
   margin: 6px 0 0;
   padding-left: 18px;
 }
-.cycle li.me {
-  font-weight: 800;
-  color: var(--accent-text);
+.cycle-head {
+  margin: 0;
+}
+.cycle li + li {
+  margin-top: 4px;
+}
+.cycle .pill {
+  margin-left: 8px;
 }
 
 /* Participantes (admin) */
