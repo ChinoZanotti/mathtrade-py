@@ -5,10 +5,13 @@ import PoweredByBgg from './PoweredByBgg';
 
 interface Props {
   onPick: (game: BggResult) => void;
+  autoFocus?: boolean;
 }
 
+const MIN_CHARS = 3;
+
 /** Buscador de juegos en BoardGameGeek (vía Edge Function `bgg-search`, que guarda el token). */
-export default function BggSearch({ onPick }: Props) {
+export default function BggSearch({ onPick, autoFocus }: Props) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<BggResult[]>([]);
   const [busy, setBusy] = useState(false);
@@ -18,14 +21,16 @@ export default function BggSearch({ onPick }: Props) {
 
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 3) {
+    // Cada cambio invalida la búsqueda en vuelo, también al borrar: así no reaparecen resultados viejos.
+    const mine = ++seq.current;
+    if (q.length < MIN_CHARS) {
       setResults([]);
       setError(null);
+      setBusy(false);
       return;
     }
-    const mine = ++seq.current;
+    setBusy(true); // evita mostrar "Sin resultados" mientras se espera el debounce
     const t = setTimeout(async () => {
-      setBusy(true);
       setError(null);
       const { data, error } = await supabase.functions.invoke('bgg-search', { body: { query: q } });
       if (mine !== seq.current) return; // llegó una búsqueda más nueva
@@ -44,12 +49,31 @@ export default function BggSearch({ onPick }: Props) {
     <div className="bgg">
       <label className="field">
         <span>Buscá el juego en BoardGameGeek</span>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ej: Catan, Azul, Wingspan…" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Ej: Catan, Azul, Wingspan…"
+          autoFocus={autoFocus}
+          aria-describedby="bgg-search-status"
+        />
       </label>
       {demo && <p className="alert">Modo de prueba: la búsqueda usa una lista fija de juegos hasta que se configure el token de BGG.</p>}
-      {busy && <p className="small muted">Buscando…</p>}
-      {error && <p className="alert error">{error}</p>}
-      {!busy && !error && query.trim().length >= 3 && results.length === 0 && <p className="small muted">Sin resultados.</p>}
+      <div id="bgg-search-status" role="status">
+        {query.trim().length > 0 && query.trim().length < MIN_CHARS && <p className="small muted">Escribí al menos {MIN_CHARS} letras para buscar.</p>}
+        {busy && <p className="small muted">Buscando…</p>}
+        {!busy && !error && query.trim().length >= MIN_CHARS && (
+          <p className="small muted">
+            {results.length === 0
+              ? 'Sin resultados. Probá con otro nombre o con el título en inglés.'
+              : `${results.length} ${results.length === 1 ? 'resultado' : 'resultados'}: elegí tu juego.`}
+          </p>
+        )}
+      </div>
+      {error && (
+        <p className="alert error" role="alert">
+          {error}
+        </p>
+      )}
       <div className="bgg-credit small muted">
         Datos de juegos de BoardGameGeek <PoweredByBgg />
       </div>

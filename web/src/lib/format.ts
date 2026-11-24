@@ -22,6 +22,30 @@ export const STAGES: { status: EventStatus; label: string; hint: string }[] = [
 
 export const statusLabel = (s: EventStatus) => STAGES.find((x) => x.status === s)?.label ?? s;
 
+/** Qué tiene que hacer el usuario ahora y qué viene después, según la etapa y si está inscripto. */
+export function stageGuide(status: EventStatus, joined: boolean): { now: string; next: string | null; cta: string | null } {
+  switch (status) {
+    case 'upcoming':
+      return joined
+        ? { now: 'Ya estás inscripto. Te avisamos por email cuando empiece la carga de juegos.', next: 'Etapa 1: cargar tus juegos', cta: null }
+        : { now: 'Inscribite para participar.', next: 'Etapa 1: cargar tus juegos', cta: 'Inscribite' };
+    case 'listing':
+      return joined
+        ? { now: 'Cargá los juegos que querés ofrecer.', next: 'Etapa 2: elegir qué aceptás a cambio', cta: 'Cargá tus juegos' }
+        : { now: 'Todavía podés inscribirte y cargar tus juegos.', next: 'Etapa 2: elegir qué aceptás a cambio', cta: 'Inscribite' };
+    case 'wanting':
+      return joined
+        ? { now: 'Elegí qué juegos aceptás a cambio de cada uno de los tuyos.', next: 'Resultados: qué entregás y qué recibís', cta: 'Elegí tus cambios' }
+        : { now: 'La inscripción ya cerró.', next: null, cta: null };
+    case 'processing':
+      return { now: 'Estamos calculando los intercambios.', next: 'Resultados: qué entregás y qué recibís', cta: null };
+    case 'finished':
+      return joined
+        ? { now: 'Ya están los resultados: mirá qué entregás y qué recibís.', next: 'Entrega presencial de los juegos', cta: 'Mirá tus resultados' }
+        : { now: 'El evento terminó.', next: null, cta: null };
+  }
+}
+
 export function formatDate(iso: string): string {
   return new Intl.DateTimeFormat('es-PY', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
 }

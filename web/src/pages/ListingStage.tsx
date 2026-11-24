@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { CONDITIONS, LANGUAGES } from '../lib/format';
+import { friendlyError } from '../lib/errors';
 import type { BggResult, EventItem, TradeEvent } from '../lib/types';
 import BggSearch from '../components/BggSearch';
 import ItemCard from '../components/ItemCard';
@@ -22,6 +23,11 @@ export default function ListingStage({ event, userId }: { event: TradeEvent; use
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Confirmación de la última acción ("Agregamos X a tu lista").
+  const [notice, setNotice] = useState<string | null>(null);
+  // Después de guardar, el foco vuelve al buscador para cargar el siguiente juego.
+  const [focusSearch, setFocusSearch] = useState(false);
+  const conditionRef = useRef<HTMLSelectElement>(null);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -30,7 +36,7 @@ export default function ListingStage({ event, userId }: { event: TradeEvent; use
       .eq('event_id', event.id)
       .eq('owner_id', userId)
       .order('created_at');
-    if (error) return setError(error.message);
+    if (error) return setError(friendlyError(error, 'No pudimos cargar tu lista de juegos.'));
     setItems(data as EventItem[]);
   }, [event.id, userId]);
 
@@ -38,7 +44,18 @@ export default function ListingStage({ event, userId }: { event: TradeEvent; use
     void load();
   }, [load]);
 
+  // Al abrir el formulario, el foco va al primer dato a completar.
+  useEffect(() => {
+    if (draft && !editingId) conditionRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft?.bgg_id, editingId]);
+
+  // Ya cargado antes (puede ser otro ejemplar: se avisa, no se bloquea).
+  const duplicate = draft && !editingId ? (items ?? []).find((i) => i.bgg_id === draft.bgg_id) : undefined;
+
   function pick(g: BggResult) {
+    setNotice(null);
+    setFocusSearch(false);
     setEditingId(null);
     setDraft({
       bgg_id: g.id,
@@ -52,6 +69,7 @@ export default function ListingStage({ event, userId }: { event: TradeEvent; use
   }
 
   function edit(it: EventItem) {
+    setNotice(null);
     setEditingId(it.id);
     setDraft({
       bgg_id: it.bgg_id,
@@ -87,7 +105,9 @@ export default function ListingStage({ event, userId }: { event: TradeEvent; use
           notes: draft.notes.trim(),
         });
     setBusy(false);
-    if (error) return setError(error.message);
+    if (error) return setError(friendlyError(error, 'No pudimos guardar el juego. Probá de nuevo.'));
+    setNotice(editingId ? `✓ Guardamos los cambios de ${draft.title}.` : `✓ Agregamos ${draft.title} a tu lista. Podés buscar el siguiente.`);
+    setFocusSearch(true);
     setDraft(null);
     setEditingId(null);
     await load();
@@ -95,8 +115,11 @@ export default function ListingStage({ event, userId }: { event: TradeEvent; use
 
   async function remove(it: EventItem) {
     if (!confirm(`¿Quitar "${it.title}" de tu lista?`)) return;
+    setError(null);
+    setNotice(null);
     const { error } = await supabase.from('event_items').delete().eq('id', it.id);
-    if (error) return setError(error.message);
+    if (error) return setError(friendlyError(error, 'No pudimos quitar el juego. Probá de nuevo.'));
+    setNotice(`Quitamos ${it.title} de tu lista.`);
     await load();
   }
 
@@ -107,8 +130,17 @@ export default function ListingStage({ event, userId }: { event: TradeEvent; use
         Agregá cada juego que estés dispuesto a entregar. Indicá su estado y el idioma para que los demás sepan qué reciben. Podés editar tu lista hasta
         que cierre la etapa.
       </p>
+      <p className="tip">
+        <span aria-hidden>💡</span> Cuantos más juegos ofrezcas, más chances de que se arme un cambio. Cuando cierre la etapa te avisamos por email para
+        elegir qué aceptás a cambio.
+      </p>
 
-      {error && <p className="alert error">{error}</p>}
+      {error && (
+        <p className="alert error" role="alert">
+          {error}
+        </p>
+      )}
+      <div role="status">{notice && !draft && <p className="alert ok">{notice}</p>}</div>
 
       {draft ? (
         <form className="card form" onSubmit={save}>
@@ -121,10 +153,15 @@ export default function ListingStage({ event, userId }: { event: TradeEvent; use
               <p className="small muted">{editingId ? 'Editando tu publicación' : 'Completá los datos de tu ejemplar'}</p>
             </div>
           </div>
+          {duplicate && (
+            <p className="alert">
+              Ya tenés {draft.title} en tu lista. Si es otro ejemplar, agregalo igual y contá en observaciones en qué se diferencia.
+            </p>
+          )}
           <div className="grid two">
             <label className="field">
               <span>Estado *</span>
-              <select value={draft.condition} onChange={(e) => setDraft({ ...draft, condition: e.target.value })} required>
+              <select ref={conditionRef} value={draft.condition} onChange={(e) => setDraft({ ...draft, condition: e.target.value })} required>
                 <option value="" disabled>
                   Elegí el estado…
                 </option>
@@ -177,7 +214,7 @@ export default function ListingStage({ event, userId }: { event: TradeEvent; use
         </form>
       ) : (
         <div className="card">
-          <BggSearch onPick={pick} />
+          <BggSearch onPick={pick} autoFocus={focusSearch} />
         </div>
       )}
 
@@ -192,10 +229,10 @@ export default function ListingStage({ event, userId }: { event: TradeEvent; use
             mine
             actions={
               <>
-                <button className="btn ghost small" onClick={() => edit(it)}>
+                <button className="btn ghost small" onClick={() => edit(it)} aria-label={`Editar ${it.title}`}>
                   Editar
                 </button>
-                <button className="btn ghost small danger" onClick={() => void remove(it)}>
+                <button className="btn ghost small danger" onClick={() => void remove(it)} aria-label={`Quitar ${it.title}`}>
                   Quitar
                 </button>
               </>

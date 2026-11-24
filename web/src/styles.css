@@ -8,6 +8,8 @@
   --ink: #22223b;
   --muted: #6b6880;
   --line: #eadfc8;
+  /* Borde de campos y controles: contraste ≥ 3:1 con el fondo (WCAG 1.4.11). --line es solo decorativo. */
+  --field-border: #8a8499;
   /* Borde y sombra sólida de las piezas "de ficha" (botones, tarjetas). */
   --edge: #22223b;
   --edge-shadow: #22223b;
@@ -313,7 +315,7 @@ code {
 }
 .chip {
   flex: none;
-  border: 2px solid var(--line);
+  border: 2px solid var(--field-border);
   background: var(--surface);
   color: var(--ink);
   padding: 7px 14px;
@@ -345,8 +347,8 @@ code {
   margin: 16px 0 8px;
   flex-wrap: wrap;
 }
+/* El color de cada paso viene de su clase .stage-* (definirlo acá lo pisaba). */
 .stepper li {
-  --stage: var(--meeple-gray);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -398,7 +400,7 @@ textarea {
   font: inherit;
   color: var(--ink);
   background: var(--surface);
-  border: 2px solid var(--line);
+  border: 2px solid var(--field-border);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   width: 100%;
@@ -406,7 +408,10 @@ textarea {
 input:hover,
 select:hover,
 textarea:hover {
-  border-color: color-mix(in srgb, var(--edge) 40%, var(--line));
+  border-color: var(--edge);
+}
+.field > small {
+  font-size: 0.8rem;
 }
 input:focus-visible,
 select:focus-visible,
@@ -506,6 +511,48 @@ input[type='checkbox'] {
 .alert.ok {
   background: var(--ok-bg);
   color: var(--ok);
+}
+/* Alerta con acción (p. ej. "Reintentar"). */
+div.alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+}
+.alert-text {
+  margin: 0;
+}
+
+/* Orientación por etapa: qué hacer ahora y qué viene después. */
+.next-step {
+  margin: 4px 0 8px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.next-step p {
+  margin: 0;
+}
+.next-step p + p {
+  margin-top: 2px;
+  font-size: 0.9rem;
+}
+.event-cta {
+  margin: 10px 0 0;
+  font-weight: 800;
+  color: var(--brand);
+}
+.tip {
+  margin: 8px 0 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  font-size: 0.9rem;
+}
+.leave-event {
+  margin-top: 16px;
 }
 
 /* Tabs */

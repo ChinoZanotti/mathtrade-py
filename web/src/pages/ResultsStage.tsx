@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { EventItem, TradeEvent, Trade } from '../lib/types';
 import ItemCard from '../components/ItemCard';
 import SkeletonItems from '../components/Skeleton';
+import { friendlyError } from '../lib/errors';
 
 interface Stats {
   numItems: number;
@@ -17,19 +18,22 @@ export default function ResultsStage({ event, userId }: { event: TradeEvent; use
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    void (async () => {
-      const [it, tr, rs] = await Promise.all([
-        supabase.from('event_items').select('*, profiles:profiles!owner_id(display_name)').eq('event_id', event.id),
-        supabase.from('trades').select('*').eq('event_id', event.id).order('cycle_no').order('cycle_position'),
-        supabase.from('event_results').select('stats').eq('event_id', event.id).maybeSingle(),
-      ]);
-      if (it.error || tr.error) return setError((it.error ?? tr.error)!.message);
-      setItems(it.data as unknown as EventItem[]);
-      setTrades(tr.data as Trade[]);
-      setStats((rs.data?.stats as Stats | undefined) ?? null);
-    })();
+  const load = useCallback(async () => {
+    setError(null);
+    const [it, tr, rs] = await Promise.all([
+      supabase.from('event_items').select('*, profiles:profiles!owner_id(display_name)').eq('event_id', event.id),
+      supabase.from('trades').select('*').eq('event_id', event.id).order('cycle_no').order('cycle_position'),
+      supabase.from('event_results').select('stats').eq('event_id', event.id).maybeSingle(),
+    ]);
+    if (it.error || tr.error) return setError(friendlyError(it.error ?? tr.error, 'No pudimos cargar los resultados.'));
+    setItems(it.data as unknown as EventItem[]);
+    setTrades(tr.data as Trade[]);
+    setStats((rs.data?.stats as Stats | undefined) ?? null);
   }, [event.id]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const byId = useMemo(() => new Map((items ?? []).map((i) => [i.id, i])), [items]);
   // Para cada juego: quién lo recibe (el dueño del juego cuya fila "recibe" este).
@@ -41,7 +45,15 @@ export default function ResultsStage({ event, userId }: { event: TradeEvent; use
   const tradeByItem = useMemo(() => new Map(trades.map((t) => [t.item_id, t])), [trades]);
   // Los ciclos completos solo se muestran a los admins, en /admin/events/:id/intercambios.
 
-  if (error) return <p className="alert error">{error}</p>;
+  if (error)
+    return (
+      <div className="alert error" role="alert">
+        <p className="alert-text">{error}</p>
+        <button className="btn small" onClick={() => void load()}>
+          Reintentar
+        </button>
+      </div>
+    );
   if (!items) return <SkeletonItems count={3} label="Cargando resultados…" />;
 
   const myItems = items.filter((i) => i.owner_id === userId);
@@ -73,7 +85,7 @@ export default function ResultsStage({ event, userId }: { event: TradeEvent; use
                 <ItemCard item={mi} mine showOwner={false} />
                 {sendToItem && (
                   <p className="small">
-                    Se lo enviás a <strong>{sendToItem.profiles?.display_name}</strong>
+                    Se lo entregás a <strong>{sendToItem.profiles?.display_name}</strong>
                     {sent && <> <span className="pill ok">Entregado ✓</span></>}
                   </p>
                 )}
@@ -86,7 +98,7 @@ export default function ResultsStage({ event, userId }: { event: TradeEvent; use
                 {getting && <ItemCard item={getting} />}
                 {getting && (
                   <p className="small">
-                    Te lo envía <strong>{getting.profiles?.display_name}</strong>
+                    Te lo entrega <strong>{getting.profiles?.display_name}</strong>
                     {t.delivered_at && <> <span className="pill ok">Recibido ✓</span></>}
                   </p>
                 )}

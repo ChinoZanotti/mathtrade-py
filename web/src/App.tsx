@@ -24,7 +24,12 @@ export default function App() {
       </main>
     );
   }
-  if (loading) return <div className="center muted">Cargando…</div>;
+  if (loading)
+    return (
+      <div className="center muted" role="status">
+        Cargando…
+      </div>
+    );
   // Entró con el link de recuperación: primero tiene que elegir la contraseña nueva.
   if (session && recovering) return <ResetPassword />;
   if (!session) {

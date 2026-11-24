@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
+import { friendlyError } from '../lib/errors';
 
 // Se muestra al entrar desde el link de "Recuperar contraseña" que llega por email.
 // En ese momento el usuario ya tiene una sesión temporal y solo falta guardar la clave nueva.
@@ -26,7 +27,7 @@ export default function ResetPassword() {
     if (error) {
       if (/at least 8|weak/i.test(error.message)) setError('La contraseña debe tener al menos 8 caracteres.');
       else if (/different from the old/i.test(error.message)) setError('La contraseña nueva tiene que ser distinta de la anterior.');
-      else setError(error.message);
+      else setError(friendlyError(error));
       return;
     }
     finishRecovery();
@@ -43,19 +44,26 @@ export default function ResetPassword() {
         <p className="muted">Elegí una contraseña nueva para tu cuenta.</p>
         <label className="field">
           <span>Contraseña nueva</span>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} autoComplete="new-password" />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} autoComplete="new-password" aria-describedby="pw-hint" />
+          <small id="pw-hint" className="muted">
+            Mínimo 8 caracteres.
+          </small>
         </label>
         <label className="field">
           <span>Repetir contraseña</span>
           <input type="password" value={repeat} onChange={(e) => setRepeat(e.target.value)} required minLength={8} autoComplete="new-password" />
         </label>
-        {error && <p className="alert error">{error}</p>}
+        {error && (
+          <p className="alert error" role="alert">
+            {error}
+          </p>
+        )}
         <button className="btn primary block" disabled={busy}>
           {busy ? 'Un momento…' : 'Guardar contraseña'}
         </button>
         <p className="login-links">
           <button type="button" className="link-btn" onClick={() => void signOut()}>
-            Cancelar
+            Cancelar y salir
           </button>
         </p>
       </form>

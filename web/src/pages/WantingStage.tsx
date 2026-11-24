@@ -4,6 +4,7 @@ import type { EventItem, TradeEvent, Want } from '../lib/types';
 import ItemCard from '../components/ItemCard';
 import GameFilters, { EMPTY_FILTER, isFiltering, matchesFilter, type GameFilterValue } from '../components/GameFilters';
 import SkeletonItems from '../components/Skeleton';
+import { friendlyError } from '../lib/errors';
 
 // Cuánto tiempo queda disponible "Deshacer" después de quitar todos los elegidos.
 const UNDO_MS = 8000;
@@ -44,13 +45,13 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
       .select('*, profiles:profiles!owner_id(display_name)')
       .eq('event_id', event.id)
       .order('title');
-    if (error) return setError(error.message);
+    if (error) return setError(friendlyError(error, 'No pudimos cargar los juegos.'));
     const all = data as unknown as EventItem[];
     setItems(all);
     const mineIds = all.filter((i) => i.owner_id === userId).map((i) => i.id);
     if (mineIds.length) {
       const w = await supabase.from('item_wants').select('item_id, wanted_item_id, rank').in('item_id', mineIds);
-      if (w.error) return setError(w.error.message);
+      if (w.error) return setError(friendlyError(w.error, 'No pudimos cargar tus elecciones.'));
       const map = new Map<string, Set<string>>();
       for (const r of w.data as Want[]) {
         if (!map.has(r.item_id)) map.set(r.item_id, new Set());
@@ -134,7 +135,7 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
     if (error) {
       apply(had); // revertir
       setSaveFailed(true);
-      setError(`No se pudo guardar el cambio. Probá de nuevo. (${error.message})`);
+      setError(friendlyError(error, 'No se pudo guardar el cambio. Probá de nuevo.'));
     }
   }
 
@@ -155,7 +156,7 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
     if (error) {
       setWants((prevMap) => new Map(prevMap).set(itemId, before)); // revertir
       setSaveFailed(true);
-      setError(`No se pudo guardar el cambio. Probá de nuevo. (${error.message})`);
+      setError(friendlyError(error, 'No se pudo guardar el cambio. Probá de nuevo.'));
       return false;
     }
     return true;
@@ -190,7 +191,17 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
     setView('all');
   }
 
-  if (!items) return <SkeletonItems label="Cargando juegos…" />;
+  if (!items)
+    return error ? (
+      <div className="alert error" role="alert">
+        <p className="alert-text">{error}</p>
+        <button className="btn small" onClick={() => void load()}>
+          Reintentar
+        </button>
+      </div>
+    ) : (
+      <SkeletonItems label="Cargando juegos…" />
+    );
 
   const titleOf = new Map(items.map((i) => [i.id, i.title]));
 
