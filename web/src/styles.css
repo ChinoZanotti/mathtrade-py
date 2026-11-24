@@ -630,6 +630,322 @@ input[type='checkbox'] {
   flex: 1;
   min-width: 200px;
 }
+.toolbar select {
+  width: auto;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Etapa 2: dos columnas (paso 1 = mi juego, paso 2 = lo que acepto).
+   La página se ensancha solo mientras se muestra esta etapa. */
+.app:has(.wanting-stage) .container {
+  max-width: 1180px;
+}
+.wanting-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+}
+.wanting-head h2 {
+  margin-bottom: 0.2em;
+}
+.wanting-head p {
+  margin: 0;
+}
+.save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--ok);
+  background: var(--ok-bg);
+  padding: 5px 12px;
+  border-radius: 999px;
+}
+.save-status.saving {
+  color: var(--muted);
+  background: var(--surface-2);
+}
+.save-status.failed {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+.wanting {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.step-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  margin: 0 0 10px;
+}
+.step-num {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--meeple-pink);
+  color: var(--ink);
+  border: 2px solid var(--edge);
+  box-shadow: 0 2px 0 var(--edge-shadow);
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+/* Altura aproximada de la barra superior fija, para los elementos "sticky". */
+.wanting-stage {
+  --sticky-top: 76px;
+}
+.mine-panel {
+  position: sticky;
+  top: var(--sticky-top);
+  max-height: calc(100vh - var(--sticky-top) - 12px);
+  overflow-y: auto;
+  padding: 16px;
+}
+.mine-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.mine-game {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.mine-game:hover {
+  border-color: var(--edge);
+}
+.mine-game.on {
+  border-color: var(--edge);
+  background: color-mix(in srgb, var(--meeple-pink) 16%, var(--surface));
+  box-shadow: 0 3px 0 var(--edge-shadow);
+}
+.mine-game-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.mine-game .t {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.2;
+}
+.s {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.s.has {
+  color: var(--ok);
+}
+.s.none {
+  color: var(--accent-text);
+}
+.mine-game .here {
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.progress-note {
+  margin: 14px 0 6px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.progress.pink {
+  margin-top: 0;
+}
+.progress.pink span {
+  background: var(--meeple-pink);
+}
+.save-hint {
+  margin: 10px 0 0;
+}
+.choose {
+  scroll-margin-top: var(--sticky-top);
+}
+.choose-head {
+  position: sticky;
+  top: var(--sticky-top);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 2px solid var(--edge);
+  /* La segunda sombra tapa la franja entre la barra superior y el encabezado fijo. */
+  box-shadow: var(--shadow), 0 -16px 0 2px var(--bg);
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+.choose-head p {
+  margin: 0;
+}
+.choose-head .big {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  line-height: 1.25;
+  min-width: 0;
+}
+.choose-head .count-badge {
+  margin-left: auto;
+  text-align: center;
+  background: var(--brand);
+  color: var(--brand-ink);
+  border: 2px solid var(--edge);
+  border-radius: var(--radius-sm);
+  padding: 4px 12px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.choose-head .count-badge small {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.segmented {
+  display: inline-flex;
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+.segmented button {
+  border: 2px solid transparent;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 4px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.segmented button:hover {
+  color: var(--ink);
+}
+.segmented button.on {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--edge);
+}
+.showing {
+  display: flex;
+  align-items: center;
+  gap: 4px 12px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 700;
+  margin: -4px 0 10px;
+}
+.showing .clear-all {
+  margin-left: auto;
+}
+.pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--edge);
+  background: var(--surface);
+  box-shadow: 0 2px 0 var(--edge-shadow);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pick input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: inherit;
+}
+.pick:has(input:focus-visible) {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
+.pick:has(input:disabled) {
+  opacity: 0.6;
+  cursor: progress;
+}
+.pick.on {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+.pick.on input {
+  accent-color: var(--surface);
+}
+.pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.review h3 {
+  margin-top: 0;
+}
+.review-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  gap: 8px;
+}
+.review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.review-body {
+  min-width: 0;
+}
+.review-body p {
+  margin: 2px 0 0;
+}
+@media (max-width: 760px) {
+  .wanting {
+    grid-template-columns: 1fr;
+  }
+  .mine-panel {
+    position: static;
+    max-height: none;
+  }
+  .choose-head .big {
+    font-size: 1rem;
+  }
+}
 
 /* BGG */
 .bgg-results {
@@ -901,5 +1217,25 @@ input[type='checkbox'] {
   .nav {
     order: 3;
     width: 100%;
+  }
+  /* En celular la barra superior ocupa dos filas. */
+  .wanting-stage {
+    --sticky-top: 120px;
+  }
+}
+
+/* Quien pide menos movimiento en su sistema no ve saltos ni deslizamientos. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+  .btn:active:not(:disabled),
+  .item.clickable:hover,
+  .event-card:hover {
+    transform: none;
   }
 }

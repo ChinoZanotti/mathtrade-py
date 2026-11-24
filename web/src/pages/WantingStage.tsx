@@ -1,18 +1,35 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { EventItem, TradeEvent, Want } from '../lib/types';
+import { CONDITIONS } from '../lib/format';
 import ItemCard from '../components/ItemCard';
 
 type Tab = 'wants' | 'catalog';
+type View = 'all' | 'picked' | 'unpicked';
+
+const VIEWS: { value: View; label: string }[] = [
+  { value: 'all', label: 'Todos' },
+  { value: 'picked', label: 'Elegidos' },
+  { value: 'unpicked', label: 'Sin elegir' },
+];
+
+const opciones = (n: number) => `${n} ${n === 1 ? 'opción elegida' : 'opciones elegidas'}`;
 
 export default function WantingStage({ event, userId }: { event: TradeEvent; userId: string }) {
   const [items, setItems] = useState<EventItem[] | null>(null);
   const [wants, setWants] = useState<Map<string, Set<string>>>(new Map());
   const [tab, setTab] = useState<Tab>('wants');
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [filter, setFilter] = useState('');
-  const [onlySelected, setOnlySelected] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
+  const [query, setQuery] = useState('');
+  const [condition, setCondition] = useState('');
+  const [view, setView] = useState<View>('all');
   const [error, setError] = useState<string | null>(null);
+  // Cambios en vuelo, por "juegoPropio:juegoAjeno": evita dobles clics y alimenta el indicador de guardado.
+  const [pending, setPending] = useState<Set<string>>(new Set());
+  const [saveFailed, setSaveFailed] = useState(false);
+  const step2Ref = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLElement>(null);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -34,6 +51,7 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
       }
       setWants(map);
     }
+    // Entra con el primer juego propio ya seleccionado (decisión de Chino).
     setActiveId((cur) => cur ?? all.find((i) => i.owner_id === userId)?.id ?? null);
   }, [event.id, userId]);
 
@@ -43,13 +61,19 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
 
   const mine = useMemo(() => (items ?? []).filter((i) => i.owner_id === userId), [items, userId]);
   const others = useMemo(() => (items ?? []).filter((i) => i.owner_id !== userId), [items, userId]);
-  const active = mine.find((i) => i.id === activeId) ?? null;
-  const activeWants = (activeId && wants.get(activeId)) || new Set<string>();
+  const activeIdx = mine.findIndex((i) => i.id === activeId);
+  const active = activeIdx >= 0 ? mine[activeIdx] : null;
+  const prev = activeIdx > 0 ? mine[activeIdx - 1] : null;
+  const next = activeIdx >= 0 && activeIdx < mine.length - 1 ? mine[activeIdx + 1] : null;
+  const withWants = mine.filter((m) => (wants.get(m.id)?.size ?? 0) > 0).length;
 
   const visible = useMemo(() => {
-    const q = filter.trim().toLowerCase();
+    const picked = (activeId && wants.get(activeId)) || new Set<string>();
+    const q = query.trim().toLowerCase();
     return others.filter((o) => {
-      if (onlySelected && !activeWants.has(o.id)) return false;
+      if (view === 'picked' && !picked.has(o.id)) return false;
+      if (view === 'unpicked' && picked.has(o.id)) return false;
+      if (condition && o.condition !== condition) return false;
       if (!q) return true;
       return (
         o.title.toLowerCase().includes(q) ||
@@ -57,60 +81,120 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
         o.language.toLowerCase().includes(q)
       );
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [others, filter, onlySelected, wants, activeId]);
+  }, [others, query, condition, view, wants, activeId]);
+
+  const activeWants = (activeId && wants.get(activeId)) || new Set<string>();
+  const filtering = query.trim() !== '' || condition !== '' || view !== 'all';
+
+  function scrollTo(el: HTMLElement | null) {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  function choose(id: string, scroll: boolean) {
+    setActiveId(id);
+    setReviewing(false);
+    if (scroll) requestAnimationFrame(() => scrollTo(step2Ref.current));
+  }
+
+  function openReview() {
+    setReviewing(true);
+    requestAnimationFrame(() => scrollTo(topRef.current));
+  }
 
   async function toggle(wantedId: string) {
     if (!activeId) return;
-    const had = activeWants.has(wantedId);
+    const itemId = activeId; // fijo: el usuario puede cambiar de juego mientras se guarda
+    const key = `${itemId}:${wantedId}`;
+    if (pending.has(key)) return;
+    const had = wants.get(itemId)?.has(wantedId) ?? false;
     setError(null);
+    setSaveFailed(false);
     const apply = (add: boolean) =>
-      setWants((prev) => {
-        const next = new Map(prev);
-        const set = new Set(next.get(activeId) ?? []);
+      setWants((prevMap) => {
+        const nextMap = new Map(prevMap);
+        const set = new Set(nextMap.get(itemId) ?? []);
         if (add) set.add(wantedId);
         else set.delete(wantedId);
-        next.set(activeId, set);
-        return next;
+        nextMap.set(itemId, set);
+        return nextMap;
       });
     apply(!had); // optimista
+    setPending((p) => new Set(p).add(key));
     const { error } = had
-      ? await supabase.from('item_wants').delete().eq('item_id', activeId).eq('wanted_item_id', wantedId)
-      : await supabase.from('item_wants').insert({ item_id: activeId, wanted_item_id: wantedId });
+      ? await supabase.from('item_wants').delete().eq('item_id', itemId).eq('wanted_item_id', wantedId)
+      : await supabase.from('item_wants').insert({ item_id: itemId, wanted_item_id: wantedId });
+    setPending((p) => {
+      const n = new Set(p);
+      n.delete(key);
+      return n;
+    });
     if (error) {
       apply(had); // revertir
-      setError(error.message);
+      setSaveFailed(true);
+      setError(`No se pudo guardar el cambio. Probá de nuevo. (${error.message})`);
     }
   }
 
   async function clearAll() {
     if (!activeId || !activeWants.size) return;
     if (!confirm('¿Quitar todas las opciones elegidas para este juego?')) return;
-    const { error } = await supabase.from('item_wants').delete().eq('item_id', activeId);
-    if (error) return setError(error.message);
-    setWants((prev) => new Map(prev).set(activeId, new Set()));
+    const itemId = activeId;
+    setSaveFailed(false);
+    setPending((p) => new Set(p).add(`${itemId}:*`));
+    const { error } = await supabase.from('item_wants').delete().eq('item_id', itemId);
+    setPending((p) => {
+      const n = new Set(p);
+      n.delete(`${itemId}:*`);
+      return n;
+    });
+    if (error) {
+      setSaveFailed(true);
+      return setError(`No se pudo guardar el cambio. Probá de nuevo. (${error.message})`);
+    }
+    setWants((prevMap) => new Map(prevMap).set(itemId, new Set()));
+  }
+
+  function clearFilters() {
+    setQuery('');
+    setCondition('');
+    setView('all');
   }
 
   if (!items) return <p className="muted">Cargando juegos…</p>;
 
-  return (
-    <section>
-      <h2>Etapa 2 · Elegí por qué juegos cambiarías los tuyos</h2>
-      <p className="muted">
-        Para cada juego que ofreciste, marcá <strong>todos</strong> los juegos que aceptarías recibir a cambio. Si ninguno te interesa, dejalo sin marcar y
-        no se intercambiará. Un juego tuyo solo se cambia por <strong>uno</strong> de los que marques.
-      </p>
+  const titleOf = new Map(items.map((i) => [i.id, i.title]));
 
-      <div className="tabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'wants'} className={tab === 'wants' ? 'on' : ''} onClick={() => setTab('wants')}>
+  return (
+    <section ref={topRef} className="wanting-stage">
+      <div className="wanting-head">
+        <div>
+          <h2>Etapa 2 · Elegí qué aceptás a cambio de cada uno de tus juegos</h2>
+          <p className="muted">
+            Si marcás varios, tu juego se cambia por <strong>uno solo</strong> de ellos. Si no marcás nada, ese juego se queda con vos.
+          </p>
+        </div>
+        {mine.length > 0 && (
+          <span className={`save-status ${pending.size ? 'saving' : saveFailed ? 'failed' : ''}`} role="status">
+            {pending.size ? 'Guardando…' : saveFailed ? 'No se pudo guardar el último cambio' : '✓ Todos tus cambios están guardados'}
+          </span>
+        )}
+      </div>
+
+      <div className="tabs">
+        <button aria-pressed={tab === 'wants'} className={tab === 'wants' ? 'on' : ''} onClick={() => setTab('wants')}>
           Mis elecciones
         </button>
-        <button role="tab" aria-selected={tab === 'catalog'} className={tab === 'catalog' ? 'on' : ''} onClick={() => setTab('catalog')}>
+        <button aria-pressed={tab === 'catalog'} className={tab === 'catalog' ? 'on' : ''} onClick={() => setTab('catalog')}>
           Catálogo completo ({items.length})
         </button>
       </div>
 
-      {error && <p className="alert error">{error}</p>}
+      {error && (
+        <p className="alert error" role="alert">
+          {error}
+        </p>
+      )}
 
       {tab === 'catalog' && (
         <div className="stack">
@@ -120,68 +204,217 @@ export default function WantingStage({ event, userId }: { event: TradeEvent; use
         </div>
       )}
 
-      {tab === 'wants' && (
-        <>
-          {mine.length === 0 ? (
-            <p className="alert">No cargaste juegos en este evento, así que no hay nada para elegir. Podés mirar el catálogo completo.</p>
-          ) : (
-            <>
-              <p className="small muted">Tu juego a cambiar:</p>
-              <div className="chips-row">
-                {mine.map((m) => (
-                  <button key={m.id} className={`chip ${m.id === activeId ? 'on' : ''}`} onClick={() => setActiveId(m.id)}>
-                    {m.title} <span className="count">{wants.get(m.id)?.size ?? 0}</span>
+      {tab === 'wants' && mine.length === 0 && (
+        <p className="alert">No cargaste juegos en este evento, así que no hay nada para elegir. Podés mirar el catálogo completo.</p>
+      )}
+
+      {tab === 'wants' && mine.length > 0 && reviewing && (
+        <div className="card review">
+          <h3>Tus elecciones</h3>
+          <p className="muted">
+            No tenés que hacer nada más: todo ya está guardado. Podés cambiar tus elecciones hasta que cierre la etapa.
+          </p>
+          <ul className="review-list">
+            {mine.map((m) => {
+              const set = wants.get(m.id) ?? new Set<string>();
+              return (
+                <li key={m.id} className="review-row">
+                  <div className="review-body">
+                    <div className="item-title">{m.title}</div>
+                    {set.size > 0 ? (
+                      <p className="small">
+                        <span className="s has">✓ {opciones(set.size)}:</span>{' '}
+                        <span className="muted">
+                          {[...set]
+                            .map((id) => titleOf.get(id) ?? '')
+                            .filter(Boolean)
+                            .sort((a, b) => a.localeCompare(b, 'es'))
+                            .join(', ')}
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="small s none">● Sin opciones: este juego no se va a cambiar</p>
+                    )}
+                  </div>
+                  <button className="btn small" onClick={() => choose(m.id, true)}>
+                    Editar
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {tab === 'wants' && mine.length > 0 && !reviewing && (
+        <div className="wanting">
+          {/* Paso 1: qué juego propio doy */}
+          <aside className="card mine-panel">
+            <h3 className="step-title">
+              <span className="step-num" aria-hidden>
+                1
+              </span>{' '}
+              Elegí el juego que vas a dar
+            </h3>
+            <ul className="mine-list">
+              {mine.map((m) => {
+                const n = wants.get(m.id)?.size ?? 0;
+                const on = m.id === activeId;
+                return (
+                  <li key={m.id}>
+                    <button className={`mine-game ${on ? 'on' : ''}`} aria-current={on ? 'true' : undefined} onClick={() => choose(m.id, true)}>
+                      {m.thumbnail_url ? (
+                        <img src={m.thumbnail_url} alt="" loading="lazy" className="thumb small" />
+                      ) : (
+                        <span className="thumb small placeholder" aria-hidden>
+                          🎲
+                        </span>
+                      )}
+                      <span className="mine-game-body">
+                        <span className="t">{m.title}</span>
+                        <span className={`s ${n ? 'has' : 'none'}`}>{n ? `✓ ${opciones(n)}` : '● Sin opciones todavía'}</span>
+                        {on && <span className="here">▶ Estás eligiendo para este juego</span>}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="progress-note">
+              {withWants} de {mine.length} {mine.length === 1 ? 'juego' : 'juegos'} con opciones
+            </p>
+            <div
+              className="progress pink"
+              role="progressbar"
+              aria-label="Juegos con opciones"
+              aria-valuemin={0}
+              aria-valuemax={mine.length}
+              aria-valuenow={withWants}
+            >
+              <span style={{ width: `${(withWants / mine.length) * 100}%` }} />
+            </div>
+            <p className="small muted save-hint">Tus elecciones se guardan solas. Podés volver cuando quieras hasta que cierre la etapa.</p>
+            <button className="btn block" onClick={openReview}>
+              Listo, revisar mis elecciones
+            </button>
+          </aside>
+
+          {/* Paso 2: qué acepto a cambio */}
+          <div className="choose" ref={step2Ref}>
+            <h3 className="step-title">
+              <span className="step-num" aria-hidden>
+                2
+              </span>{' '}
+              Marcá los juegos que aceptarías a cambio
+            </h3>
+
+            {active && (
+              <div className="choose-head">
+                {active.thumbnail_url ? (
+                  <img src={active.thumbnail_url} alt="" className="thumb small" />
+                ) : (
+                  <span className="thumb small placeholder" aria-hidden>
+                    🎲
+                  </span>
+                )}
+                <p className="big">
+                  Cambio mi <strong>{active.title}</strong> por uno de estos
+                </p>
+                <p className="count-badge" aria-live="polite">
+                  {activeWants.size}
+                  <small>{activeWants.size === 1 ? 'elegido' : 'elegidos'}</small>
+                </p>
+              </div>
+            )}
+
+            <div className="toolbar">
+              <input
+                className="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar por título, dueño o idioma…"
+                aria-label="Buscar juegos"
+              />
+              <select value={condition} onChange={(e) => setCondition(e.target.value)} aria-label="Filtrar por estado">
+                <option value="">Estado: todos</option>
+                {CONDITIONS.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+              <div className="segmented" role="group" aria-label="Mostrar">
+                {VIEWS.map((v) => (
+                  <button key={v.value} aria-pressed={view === v.value} className={view === v.value ? 'on' : ''} onClick={() => setView(v.value)}>
+                    {v.label}
                   </button>
                 ))}
               </div>
-
-              {active && (
-                <>
-                  <div className="card callout">
-                    <p className="small muted">Cambiaría</p>
-                    <ItemCard item={active} mine />
-                    <p>
-                      por <strong>cualquiera</strong> de estos ({activeWants.size} elegidos):
-                    </p>
-                  </div>
-
-                  <div className="toolbar">
-                    <input
-                      className="search"
-                      value={filter}
-                      onChange={(e) => setFilter(e.target.value)}
-                      placeholder="Filtrar por título, dueño o idioma…"
-                      aria-label="Filtrar juegos"
-                    />
-                    <label className="check">
-                      <input type="checkbox" checked={onlySelected} onChange={(e) => setOnlySelected(e.target.checked)} /> Solo elegidos
-                    </label>
-                    <button className="btn ghost small" onClick={() => void clearAll()} disabled={!activeWants.size}>
-                      Quitar todos
-                    </button>
-                  </div>
-
-                  {others.length === 0 && <p className="muted">Todavía no hay juegos de otros participantes.</p>}
-                  <div className="stack">
-                    {visible.map((o) => {
-                      const on = activeWants.has(o.id);
-                      return (
-                        <ItemCard
-                          key={o.id}
-                          item={o}
-                          selected={on}
-                          onClick={() => void toggle(o.id)}
-                          actions={<span className={`tick ${on ? 'on' : ''}`}>{on ? '✓ Elegido' : 'Elegir'}</span>}
-                        />
-                      );
-                    })}
-                    {visible.length === 0 && others.length > 0 && <p className="muted">Ningún juego coincide con el filtro.</p>}
-                  </div>
-                </>
+            </div>
+            <div className="showing">
+              <span aria-live="polite">
+                {filtering ? `Mostrando ${visible.length} de ${others.length} juegos` : `Mostrando ${others.length} juegos`}
+              </span>
+              {filtering && (
+                <button className="link-btn" onClick={clearFilters}>
+                  Limpiar filtros
+                </button>
               )}
-            </>
-          )}
-        </>
+              {activeWants.size > 0 && (
+                <button className="btn ghost small danger clear-all" onClick={() => void clearAll()}>
+                  Quitar todos los elegidos
+                </button>
+              )}
+            </div>
+
+            {others.length === 0 && <p className="muted">Todavía no hay juegos de otros participantes.</p>}
+            <div className="stack">
+              {active &&
+                visible.map((o) => {
+                  const on = activeWants.has(o.id);
+                  const busy = pending.has(`${active.id}:${o.id}`) || pending.has(`${active.id}:*`);
+                  return (
+                    <ItemCard
+                      key={o.id}
+                      item={o}
+                      selected={on}
+                      onClick={busy ? undefined : () => void toggle(o.id)}
+                      actions={
+                        <label className={`pick ${on ? 'on' : ''}`}>
+                          <input type="checkbox" checked={on} disabled={busy} onChange={() => void toggle(o.id)} />
+                          {on ? 'Elegido' : 'Elegir'}
+                          <span className="sr-only">
+                            {' '}
+                            {o.title} a cambio de {active.title}
+                          </span>
+                        </label>
+                      }
+                    />
+                  );
+                })}
+              {visible.length === 0 && others.length > 0 && <p className="muted">Ningún juego coincide con el filtro. Probá quitar alguno.</p>}
+            </div>
+
+            <div className="pager">
+              {prev ? (
+                <button className="btn ghost" onClick={() => choose(prev.id, true)}>
+                  ← Anterior: {prev.title}
+                </button>
+              ) : (
+                <span />
+              )}
+              {next ? (
+                <button className="btn primary" onClick={() => choose(next.id, true)}>
+                  Siguiente juego: {next.title} →
+                </button>
+              ) : (
+                <button className="btn primary" onClick={openReview}>
+                  Listo, revisar mis elecciones
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </section>
   );

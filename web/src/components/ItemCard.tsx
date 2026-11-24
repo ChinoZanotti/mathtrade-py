@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { conditionLabel } from '../lib/format';
 import type { EventItem } from '../lib/types';
 
@@ -7,18 +7,22 @@ interface Props {
   mine?: boolean;
   showOwner?: boolean;
   actions?: ReactNode;
+  /** Atajo con el mouse: clic en cualquier parte de la tarjeta. El control accesible va en `actions`. */
   onClick?: () => void;
   selected?: boolean;
 }
 
 export default function ItemCard({ item, mine, showOwner = true, actions, onClick, selected }: Props) {
-  const Tag = onClick ? 'button' : 'div';
+  // La tarjeta es un div (no un botón) para no anidar el enlace a BGG ni el checkbox dentro de otro control.
+  function handleClick(e: MouseEvent<HTMLDivElement>) {
+    if (!onClick) return;
+    // Los clics en el enlace o en el control de `actions` ya hacen lo suyo.
+    if ((e.target as Element).closest('a, label, input, button')) return;
+    onClick();
+  }
+
   return (
-    <Tag
-      type={onClick ? 'button' : undefined}
-      className={`item ${selected ? 'selected' : ''} ${onClick ? 'clickable' : ''}`}
-      onClick={onClick}
-    >
+    <div className={`item ${selected ? 'selected' : ''} ${onClick ? 'clickable' : ''}`} onClick={onClick ? handleClick : undefined}>
       {item.thumbnail_url ? (
         <img src={item.thumbnail_url} alt="" loading="lazy" className="thumb" />
       ) : (
@@ -28,7 +32,7 @@ export default function ItemCard({ item, mine, showOwner = true, actions, onClic
       )}
       <div className="item-body">
         <div className="item-title">
-          <a href={`https://boardgamegeek.com/boardgame/${item.bgg_id}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+          <a href={`https://boardgamegeek.com/boardgame/${item.bgg_id}`} target="_blank" rel="noreferrer">
             {item.title}
           </a>
           {item.year_published ? <span className="muted"> ({item.year_published})</span> : null}
@@ -42,6 +46,6 @@ export default function ItemCard({ item, mine, showOwner = true, actions, onClic
         {showOwner && !mine && item.profiles?.display_name && <p className="small muted">de {item.profiles.display_name}</p>}
       </div>
       {actions && <div className="item-actions">{actions}</div>}
-    </Tag>
+    </div>
   );
 }
