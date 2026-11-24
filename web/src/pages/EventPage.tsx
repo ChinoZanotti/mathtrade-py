@@ -8,6 +8,7 @@ import type { TradeEvent } from '../lib/types';
 import ListingStage from './ListingStage';
 import WantingStage from './WantingStage';
 import ResultsStage from './ResultsStage';
+import EventDescription from '../components/EventDescription';
 
 export default function EventPage() {
   const { id } = useParams();
@@ -95,7 +96,6 @@ export default function EventPage() {
         <Link to="/">← Eventos</Link>
       </p>
       <h1>{event.title}</h1>
-      {event.description && <p className="muted pre">{event.description}</p>}
 
       <ol className="stepper" aria-label="Etapas del evento">
         {STAGES.filter((s) => s.status !== 'processing').map((s) => {
@@ -184,16 +184,19 @@ export default function EventPage() {
             </div>
           )}
           {event.status === 'finished' && <ResultsStage event={event} userId={userId} />}
-
-          {(event.status === 'upcoming' || event.status === 'listing') && (
-            <div className="leave-event">
-              {actionAlert}
-              <button className="btn ghost small danger" disabled={busy} onClick={() => void leave()}>
-                Bajarme del evento
-              </button>
-            </div>
-          )}
         </>
+      )}
+
+      {/* La descripción va después de la acción principal, para no empujarla fuera de la pantalla en celular. */}
+      {event.description && <EventDescription text={event.description} status={event.status} />}
+
+      {joined && (event.status === 'upcoming' || event.status === 'listing') && (
+        <div className="leave-event">
+          {actionAlert}
+          <button className="btn ghost small danger" disabled={busy} onClick={() => void leave()}>
+            Bajarme del evento
+          </button>
+        </div>
       )}
     </>
   );

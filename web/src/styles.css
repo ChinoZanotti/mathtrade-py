@@ -6,7 +6,7 @@
   --surface: #ffffff;
   --surface-2: #fff0d6;
   --ink: #22223b;
-  --muted: #6b6880;
+  --muted: #5a5770; /* 6.5:1 sobre --bg, 6.1:1 sobre --surface-2 */
   --line: #eadfc8;
   /* Borde de campos y controles: contraste ≥ 3:1 con el fondo (WCAG 1.4.11). --line es solo decorativo. */
   --field-border: #8a8499;
@@ -538,6 +538,45 @@ div.alert {
 .next-step p + p {
   margin-top: 2px;
   font-size: 0.9rem;
+}
+/* Descripción del evento: contenido principal, en tarjeta y con texto oscuro. */
+.event-desc {
+  max-width: 70ch;
+  margin: 24px 0 16px;
+  padding: 18px 20px;
+  color: var(--ink);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.event-desc h2 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+}
+.event-desc p {
+  margin: 0.4em 0;
+  white-space: pre-line;
+}
+.event-desc ul {
+  margin: 0.2em 0 0.6em;
+  padding-left: 1.3em;
+}
+.event-desc li {
+  margin: 0.15em 0;
+}
+.event-desc-h {
+  margin: 1.1em 0 0.3em;
+  padding-left: 8px;
+  border-left: 4px solid var(--stage, var(--brand));
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+@media (max-width: 480px) {
+  .event-desc {
+    padding: 14px;
+  }
 }
 .event-cta {
   margin: 10px 0 0;
