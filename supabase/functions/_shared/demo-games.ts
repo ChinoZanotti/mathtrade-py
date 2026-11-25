@@ -2,6 +2,7 @@
 // Los usa `bgg-search` cuando no hay BGG_TOKEN y el script `scripts/seed.ts`.
 // Los ids son los reales de BoardGameGeek, así los datos siguen siendo válidos cuando llegue el token.
 // Sin dependencias: corre igual en Deno y Node.
+import { matchScore, norm } from './bgg-rank.ts';
 
 export interface DemoGame {
   id: number;
@@ -62,14 +63,14 @@ const LIST: [number, string, number][] = [
 
 export const DEMO_GAMES: DemoGame[] = LIST.map(([id, name, year]) => ({ id, name, year, thumbnail: null }));
 
-const norm = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
-
-/** Busca en la lista de prueba como lo haría BGG: por parte del nombre, sin importar mayúsculas ni tildes. */
+/**
+ * Busca en la lista de prueba como lo haría BGG: por parte del nombre, sin importar mayúsculas ni tildes.
+ * Devuelve todas las coincidencias ordenadas por parecido; `bgg-search` las pagina.
+ */
 export function searchDemoGames(query: string): DemoGame[] {
-  const q = norm(query.trim());
-  return DEMO_GAMES.filter((g) => norm(g.name).includes(q)).slice(0, 12);
+  const q = norm(query);
+  return DEMO_GAMES.filter((g) => norm(g.name).includes(q))
+    .map((g, pos) => ({ g, pos, score: matchScore(g.name, q) }))
+    .sort((a, b) => a.score - b.score || a.pos - b.pos)
+    .map(({ g }) => g);
 }

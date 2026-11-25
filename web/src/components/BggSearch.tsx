@@ -17,12 +17,18 @@ export default function BggSearch({ onPick, autoFocus }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [demo, setDemo] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const seq = useRef(0);
 
   useEffect(() => {
     const q = query.trim();
     // Cada cambio invalida la búsqueda en vuelo, también al borrar: así no reaparecen resultados viejos.
     const mine = ++seq.current;
+    setPage(0);
+    setHasMore(false);
+    setLoadingMore(false);
     if (q.length < MIN_CHARS) {
       setResults([]);
       setError(null);
@@ -40,10 +46,29 @@ export default function BggSearch({ onPick, autoFocus }: Props) {
         return;
       }
       setResults(data.results as BggResult[]);
+      setHasMore(Boolean(data.hasMore));
       setDemo(Boolean(data.demo));
     }, 600); // espera a que termine de escribir: menos consultas a BGG
     return () => clearTimeout(t);
   }, [query]);
+
+  async function loadMore() {
+    const mine = seq.current;
+    const next = page + 1;
+    setLoadingMore(true);
+    setError(null);
+    const { data, error } = await supabase.functions.invoke('bgg-search', { body: { query: query.trim(), page: next } });
+    if (mine !== seq.current) return; // cambió la búsqueda mientras cargaba
+    setLoadingMore(false);
+    if (error || !data?.results) {
+      setError('No pudimos traer más resultados. Probá de nuevo en unos segundos.');
+      return;
+    }
+    const more = data.results as BggResult[];
+    setResults((prev) => [...prev, ...more.filter((g) => !prev.some((p) => p.id === g.id))]);
+    setPage(next);
+    setHasMore(Boolean(data.hasMore));
+  }
 
   return (
     <div className="bgg">
@@ -66,6 +91,7 @@ export default function BggSearch({ onPick, autoFocus }: Props) {
             {results.length === 0
               ? 'Sin resultados. Probá con otro nombre o con el título en inglés.'
               : `${results.length} ${results.length === 1 ? 'resultado' : 'resultados'}: elegí tu juego.`}
+            {results.length > 0 && !hasMore && ' ¿No está? Probá con el nombre completo o en inglés.'}
           </p>
         )}
       </div>
@@ -89,6 +115,11 @@ export default function BggSearch({ onPick, autoFocus }: Props) {
           </li>
         ))}
       </ul>
+      {hasMore && !busy && (
+        <button type="button" className="btn small bgg-more" onClick={() => void loadMore()} disabled={loadingMore}>
+          {loadingMore ? 'Cargando…' : 'Ver más resultados'}
+        </button>
+      )}
     </div>
   );
 }

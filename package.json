@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/matcher.test.ts",
+    "test": "node --test tests/matcher.test.ts tests/bgg-rank.test.ts",
     "test:jar": "TM_JAR=${TM_JAR:?Definí TM_JAR=/ruta/a/tm.jar} node --test tests/matcher.test.ts",
     "web": "npm --prefix web run dev",
     "seed": "node --env-file=scripts/.env scripts/seed.ts"

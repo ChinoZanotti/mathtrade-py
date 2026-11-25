@@ -1134,6 +1134,10 @@ div.alert {
   background: var(--surface-2);
   border-color: var(--line);
 }
+.bgg-more {
+  display: block;
+  margin: 10px auto 0;
+}
 
 /* Atribución a BGG (obligatoria por los términos de su API) */
 .bgg-credit {
